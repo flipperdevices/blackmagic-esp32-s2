@@ -1,0 +1,3 @@
+[submodule "components/blackmagic/blackmagic-fw"]
+	path = components/blackmagic/blackmagic-fw
+	url = https://github.com/blacksphere/blackmagic.git

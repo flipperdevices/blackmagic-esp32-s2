@@ -1,0 +1,1 @@
+#define FIRMWARE_VERSION "0000"
