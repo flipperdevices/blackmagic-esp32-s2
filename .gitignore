@@ -1,3 +1,4 @@
 .vscode
 build
 sdkconfig.old
+main/wifi-credentials.h

@@ -1,6 +1,7 @@
 set(SOURCES 
     "main.c"
     "usb-cdc.c"
+    "nvs.c"
     "wifi.c"
 )
 
