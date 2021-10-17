@@ -6,19 +6,17 @@
 #include <driver/gpio.h>
 #include <rom/ets_sys.h>
 
+#include <hal/gpio_ll.h>
+#include <esp_rom_gpio.h>
+
 uint32_t swd_delay_cnt = 0;
 // static const char* TAG = "gdb-platform";
-
-//#include <soc/rtc_io_struct.h>
-#include "hal/gpio_hal.h"
-#include "hal/gpio_ll.h"
-#include "esp_rom_gpio.h"
 
 void __attribute__((always_inline)) platform_swdio_mode_float(void) {
     gpio_set_direction(SWDIO_PIN, GPIO_MODE_INPUT);
     gpio_set_pull_mode(SWDIO_PIN, GPIO_FLOATING);
 
-    // That does'n work, only gods know why
+    // That doesn't work, only gods know why
     // gpio_ll_input_enable(&GPIO, SWDIO_PIN);
     // gpio_ll_pullup_dis(&GPIO, SWDIO_PIN);
     // gpio_ll_pulldown_dis(&GPIO, SWDIO_PIN);
