@@ -7,38 +7,66 @@
 #include <rom/ets_sys.h>
 
 uint32_t swd_delay_cnt = 0;
-static const char* TAG = "gdb-platform";
+// static const char* TAG = "gdb-platform";
 
-void platform_swdio_mode_float(void) {
-    // ESP_LOGI(TAG, "swdio_mode_float");
+//#include <soc/rtc_io_struct.h>
+#include "hal/gpio_hal.h"
+#include "hal/gpio_ll.h"
+#include "esp_rom_gpio.h"
+
+void __attribute__((always_inline)) platform_swdio_mode_float(void) {
     gpio_set_direction(SWDIO_PIN, GPIO_MODE_INPUT);
     gpio_set_pull_mode(SWDIO_PIN, GPIO_FLOATING);
+
+    // That does'n work, only gods know why
+    // gpio_ll_input_enable(&GPIO, SWDIO_PIN);
+    // gpio_ll_pullup_dis(&GPIO, SWDIO_PIN);
+    // gpio_ll_pulldown_dis(&GPIO, SWDIO_PIN);
 }
 
-void platform_swdio_mode_drive(void) {
-    // ESP_LOGI(TAG, "swdio_mode_drive");
-    gpio_set_direction(SWDIO_PIN, GPIO_MODE_OUTPUT);
+void __attribute__((always_inline)) platform_swdio_mode_drive(void) {
+    // gpio_set_direction(SWDIO_PIN, GPIO_MODE_OUTPUT);
+
+    // Faster variant
+    // Supports only gpio less than 32
+    GPIO.enable_w1ts = (0x1 << SWDIO_PIN);
+    esp_rom_gpio_connect_out_signal(SWDIO_PIN, SIG_GPIO_OUT_IDX, false, false);
 }
 
-void platform_gpio_set_level(int32_t gpio_num, uint32_t value) {
-    // ESP_LOGI(TAG, "pin %d set %d", gpio_num, value);
-    gpio_set_level(gpio_num, value);
-    ets_delay_us(2);
+void __attribute__((always_inline)) platform_gpio_set_level(int32_t gpio_num, uint32_t value) {
+    // gpio_set_level(gpio_num, value);
+
+    // Faster variant
+    // Supports only gpio less than 32
+    if(value) {
+        GPIO.out_w1ts = (1 << gpio_num);
+    } else {
+        GPIO.out_w1tc = (1 << gpio_num);
+    }
 }
 
-void platform_gpio_set(int32_t gpio_num) {
-    // ESP_LOGI(TAG, "pin %d set 1", gpio_num);
-    platform_gpio_set_level(gpio_num, 1);
+void __attribute__((always_inline)) platform_gpio_set(int32_t gpio_num) {
+    // platform_gpio_set_level(gpio_num, 1);
+
+    // Faster variant
+    // Supports only gpio less than 32
+    GPIO.out_w1ts = (1 << gpio_num);
 }
 
-void platform_gpio_clear(int32_t gpio_num) {
-    // ESP_LOGI(TAG, "pin %d set 0", gpio_num);
-    platform_gpio_set_level(gpio_num, 0);
+void __attribute__((always_inline)) platform_gpio_clear(int32_t gpio_num) {
+    // platform_gpio_set_level(gpio_num, 0);
+
+    // faster variant
+    // supports only gpio less than 32
+    GPIO.out_w1tc = (1 << gpio_num);
 }
 
-int platform_gpio_get_level(int32_t gpio_num) {
-    int level = gpio_get_level(gpio_num);
-    // ESP_LOGI(TAG, "pin %d get %d", gpio_num, level);
+int __attribute__((always_inline)) platform_gpio_get_level(int32_t gpio_num) {
+    // int level = gpio_get_level(gpio_num);
+
+    // Faster variant
+    // Supports only gpio less than 32
+    int level = (GPIO.in >> gpio_num) & 0x1;
     return level;
 }
 

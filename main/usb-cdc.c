@@ -6,13 +6,10 @@
 #include <tinyusb.h>
 #include <tusb_cdc_acm.h>
 #include <sdkconfig.h>
+#include "usb-cdc.h"
 
 static const char* TAG = "usb-cdc";
 static uint8_t buffer_rx[CONFIG_USB_CDC_RX_BUFSIZE + 1];
-
-// #define buffer_tx_size 10000
-// static uint8_t buffer_tx[buffer_tx_size + 1];
-// static size_t buffer_tx_counter = 0;
 
 typedef struct {
     volatile bool connected;
@@ -26,15 +23,7 @@ typedef struct {
 static FuriHalVcp furi_hal_vcp;
 
 size_t usb_cdc_rx(uint8_t* buffer, size_t size) {
-    size_t received = xStreamBufferReceive(furi_hal_vcp.rx_stream, buffer, size, portMAX_DELAY);
-
-    if(furi_hal_vcp.rx_stream_full &&
-       xStreamBufferSpacesAvailable(furi_hal_vcp.rx_stream) >= CONFIG_USB_CDC_RX_BUFSIZE) {
-        furi_hal_vcp.rx_stream_full = false;
-        ESP_LOGW(TAG, "Stream is not full now");
-    }
-
-    return received;
+    return usb_cdc_rx_with_timeout(buffer, size, portMAX_DELAY);
 }
 
 size_t usb_cdc_rx_with_timeout(uint8_t* buffer, size_t size, uint32_t timeout) {
@@ -43,44 +32,24 @@ size_t usb_cdc_rx_with_timeout(uint8_t* buffer, size_t size, uint32_t timeout) {
     if(furi_hal_vcp.rx_stream_full &&
        xStreamBufferSpacesAvailable(furi_hal_vcp.rx_stream) >= CONFIG_USB_CDC_RX_BUFSIZE) {
         furi_hal_vcp.rx_stream_full = false;
-        ESP_LOGW(TAG, "Stream is not full now");
+        ESP_LOGW(TAG, "Stream freed");
     }
 
     return received;
 }
 
-void usb_cdc_tx(uint8_t* buffer, size_t size, bool flush) {
-    /*if(furi_hal_vcp.connected) {
-        //printf("%c", buffer[0]);
-        if((buffer_tx_counter + size) < buffer_tx_size) {
-            memcpy(&buffer_tx[buffer_tx_counter], buffer, size);
-            buffer_tx_counter += size;
-        }
-
-        while(size > 0) {
-            size_t tx_size = tinyusb_cdcacm_write_queue(TINYUSB_USBDEV_0, buffer, size);
-            size -= tx_size;
-            buffer += tx_size;
-        }
-
-        if(flush) {
-            buffer_tx[buffer_tx_counter] = '\0';
-            ESP_LOGI(TAG, "tx> %s", buffer_tx);
-            buffer_tx_counter = 0;
-
-            // TODO: timeout size
-            ESP_ERROR_CHECK_WITHOUT_ABORT(tinyusb_cdcacm_write_flush(TINYUSB_USBDEV_0, 10));
-        }
-    }*/
-    while(size > 0) {
-        size_t tx_size = tinyusb_cdcacm_write_queue(TINYUSB_USBDEV_0, buffer, size);
-        size -= tx_size;
-        buffer += tx_size;
-    }
+void usb_cdc_tx_char(uint8_t c, bool flush) {
+    // TinyUSB implements buffering, no buffering is required here
+    tinyusb_cdcacm_write_queue(TINYUSB_USBDEV_0, &c, 1);
 
     if(flush) {
+        // SOME GDB MAGIC
+        // We need to send an empty packet for some hosts to accept this as a complete transfer.
+        uint8_t zero_byte = 0;
+        tinyusb_cdcacm_write_queue(TINYUSB_USBDEV_0, &zero_byte, 1);
+
         // TODO: timeout size
-        ESP_ERROR_CHECK_WITHOUT_ABORT(tinyusb_cdcacm_write_flush(TINYUSB_USBDEV_0, 100));
+        ESP_ERROR_CHECK_WITHOUT_ABORT(tinyusb_cdcacm_write_flush(TINYUSB_USBDEV_0, 1000));
     }
 }
 
@@ -95,8 +64,8 @@ void usb_cdc_rx_callback(int itf, cdcacm_event_t* event) {
         if(err == ESP_OK) {
             if(rx_size > 0) {
                 BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-                size_t ret = xStreamBufferSendFromISR(
-                    furi_hal_vcp.rx_stream, buffer_rx, rx_size, &xHigherPriorityTaskWoken);
+                size_t ret =
+                    xStreamBufferSend(furi_hal_vcp.rx_stream, buffer_rx, rx_size, portMAX_DELAY);
                 ESP_ERROR_CHECK(ret != rx_size);
                 // buffer_rx[rx_size] = '\0';
                 // ESP_LOGI(TAG, "rx< %s", buffer_rx);

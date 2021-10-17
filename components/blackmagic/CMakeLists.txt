@@ -77,4 +77,4 @@ message(STATUS "FW Version: ${GIT_DESC}")
 idf_component_register(SRCS ${BM_SOURCES} ${BM_TARGETS}  
                     INCLUDE_DIRS ${BM_INCLUDE})
 
-target_compile_options(${COMPONENT_LIB} PRIVATE -DPC_HOSTED=0 -DFIRMWARE_VERSION="${GIT_DESC}" -Wno-char-subscripts)
+target_compile_options(${COMPONENT_LIB} PRIVATE -DPC_HOSTED=0 -DFIRMWARE_VERSION="${GIT_DESC}" -Wno-char-subscripts -Wno-attributes)
