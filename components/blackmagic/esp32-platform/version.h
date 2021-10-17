@@ -1,1 +1,2 @@
-#define FIRMWARE_VERSION "0000"
+// for includes only
+// we provide the FIRMWARE_VERSION through the build system

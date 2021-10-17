@@ -1,30 +1,97 @@
 #include <stdint.h>
-// #include <hal\gpio_types.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "general.h"
+#include <esp_log.h>
+#include <driver/gpio.h>
+#include <rom/ets_sys.h>
 
 uint32_t swd_delay_cnt = 0;
+static const char* TAG = "gdb-platform";
 
 void platform_swdio_mode_float(void) {
-    // gpio_set_direction(SWDIO_PIN, GPIO_MODE_INPUT);
-    // gpio_set_pull_mode(SWDIO_PIN, GPIO_FLOATING);
+    // ESP_LOGI(TAG, "swdio_mode_float");
+    gpio_set_direction(SWDIO_PIN, GPIO_MODE_INPUT);
+    gpio_set_pull_mode(SWDIO_PIN, GPIO_FLOATING);
 }
 
 void platform_swdio_mode_drive(void) {
-    // gpio_set_direction(SWDIO_PIN, GPIO_MODE_OUTPUT);
+    // ESP_LOGI(TAG, "swdio_mode_drive");
+    gpio_set_direction(SWDIO_PIN, GPIO_MODE_OUTPUT);
 }
 
 void platform_gpio_set_level(int32_t gpio_num, uint32_t value) {
-    /* TODO gpio_set_level(pin, value);*/
-    /* ignore that -> sdk_os_delay_us(2);	*/
+    // ESP_LOGI(TAG, "pin %d set %d", gpio_num, value);
+    gpio_set_level(gpio_num, value);
+    ets_delay_us(2);
 }
 
 void platform_gpio_set(int32_t gpio_num) {
-    // platform_gpio_set_level(gpio_num, 1);
+    // ESP_LOGI(TAG, "pin %d set 1", gpio_num);
+    platform_gpio_set_level(gpio_num, 1);
 }
 
 void platform_gpio_clear(int32_t gpio_num) {
-    // platform_gpio_set_level(gpio_num, 0);
+    // ESP_LOGI(TAG, "pin %d set 0", gpio_num);
+    platform_gpio_set_level(gpio_num, 0);
 }
 
 int platform_gpio_get_level(int32_t gpio_num) {
+    int level = gpio_get_level(gpio_num);
+    // ESP_LOGI(TAG, "pin %d get %d", gpio_num, level);
+    return level;
+}
+
+// init platform
+void platform_init() {
+}
+
+// set reset target pin level
+void platform_srst_set_val(bool assert) {
+    (void)assert;
+}
+
+// get reset target pin level
+bool platform_srst_get_val(void) {
+    return false;
+}
+
+// target voltage
+const char* platform_target_voltage(void) {
+    return NULL;
+}
+
+// platform time counter
+uint32_t platform_time_ms(void) {
+    int64_t time_milli = esp_timer_get_time() / 1000;
+    return ((uint32_t)time_milli);
+}
+
+// delay ms
+void platform_delay(uint32_t ms) {
+    vTaskDelay((ms) / portTICK_PERIOD_MS);
+}
+
+// hardware version
+int platform_hwversion(void) {
+    return 0;
+}
+
+// set timeout
+void platform_timeout_set(platform_timeout* t, uint32_t ms) {
+    t->time = platform_time_ms() + ms;
+}
+
+// check timeout
+bool platform_timeout_is_expired(platform_timeout* t) {
+    return platform_time_ms() > t->time;
+}
+
+// set interface freq
+void platform_max_frequency_set(uint32_t freq) {
+}
+
+// get interface freq
+uint32_t platform_max_frequency_get(void) {
     return 0;
 }
