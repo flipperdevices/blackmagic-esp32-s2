@@ -1,0 +1,17 @@
+language: c
+script:
+  - make
+  - make -C tests/gadget-zero
+
+addons:
+  apt:
+    sources:
+    - sourceline: 'ppa:team-gcc-arm-embedded/ppa'
+    packages:
+    - gcc-arm-embedded
+
+notifications:
+  irc:
+    channels:
+      - "chat.freenode.net#libopencm3"
+    use_notice: true

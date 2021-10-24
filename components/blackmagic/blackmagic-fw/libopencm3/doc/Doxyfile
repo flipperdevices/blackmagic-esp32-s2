@@ -1,0 +1,21 @@
+# Doxygen include file to generate top level entry document
+
+# 14 September 2012
+# (C) Ken Sarkies <ksarkies@internode.on.net>
+
+#---------------------------------------------------------------------------
+# Common Include File
+#---------------------------------------------------------------------------
+
+@INCLUDE 			   = ./Doxyfile_common
+
+#---------------------------------------------------------------------------
+# Local settings
+#---------------------------------------------------------------------------
+
+INPUT                  = ../include/libopencm3/docmain.dox
+
+LAYOUT_FILE 		   = DoxygenLayout.xml
+
+GENERATE_LATEX		   = NO
+

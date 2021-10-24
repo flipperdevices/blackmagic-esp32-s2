@@ -1,0 +1,5 @@
+tree5 tree4 A=val
+tree4 tree3 B=val
+tree3 tree2 C=val
+tree2 tree1 D=val
+tree1 END E=VAL F=val
