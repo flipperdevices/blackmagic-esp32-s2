@@ -63,7 +63,6 @@ void usb_cdc_rx_callback(int itf, cdcacm_event_t* event) {
 
         if(err == ESP_OK) {
             if(rx_size > 0) {
-                BaseType_t xHigherPriorityTaskWoken = pdFALSE;
                 size_t ret =
                     xStreamBufferSend(furi_hal_vcp.rx_stream, buffer_rx, rx_size, portMAX_DELAY);
                 ESP_ERROR_CHECK(ret != rx_size);

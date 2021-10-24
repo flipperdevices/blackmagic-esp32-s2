@@ -3,6 +3,7 @@ set(SOURCES
     "usb-cdc.c"
     "nvs.c"
     "wifi.c"
+    "led.c"
 )
 
 set(INCLUDES 
