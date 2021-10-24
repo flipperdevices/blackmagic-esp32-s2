@@ -84,10 +84,10 @@ void app_main(void) {
     pins_init();
 
     led_init();
+    led_set(0, 16, 0);
 
-    xTaskCreate(&led_thread, "led_thread", 4096, NULL, 5, NULL);
-
-    //xTaskCreate(&gdb_application_thread, "gdb_thread", 16 * 4096, NULL, 5, NULL);
+    //xTaskCreate(&led_thread, "led_thread", 4096, NULL, 5, NULL);
+    xTaskCreate(&gdb_application_thread, "gdb_thread", 16 * 4096, NULL, 5, NULL);
 
     ESP_LOGI(TAG, "end");
 }
