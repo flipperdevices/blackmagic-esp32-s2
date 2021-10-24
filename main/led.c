@@ -55,9 +55,9 @@ void led_init() {
 }
 
 void led_set(uint8_t red, uint8_t green, uint8_t blue) {
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LedChannelRed, 255U - red));
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LedChannelGreen, 255U - green));
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LedChannelBlue, 255U - blue));
+    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LedChannelRed, 256U - red));
+    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LedChannelGreen, 256U - green));
+    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LedChannelBlue, 256U - blue));
     ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LedChannelRed));
     ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LedChannelGreen));
     ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LedChannelBlue));
