@@ -48,8 +48,8 @@ int platform_gpio_get_level(int32_t gpio_num);
 // ON ESP32 we dont have the PORTS, this is dummy value until code is corrected
 #define SWCLK_PORT 0
 
-#define SWDIO_PIN (13)
-#define SWCLK_PIN (12)
+#define SWCLK_PIN (1)
+#define SWDIO_PIN (2)
 
 #if SWDIO_PIN >= 32 || SWCLK_PIN >= 32
 #error To support pins greater than 31, change the platform_gpio functions
