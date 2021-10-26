@@ -5,6 +5,8 @@
 #include "wifi.h"
 #include "gdb_main.h"
 #include "led.h"
+#include "uart.h"
+#include "i2c.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <rom/ets_sys.h>
@@ -38,42 +40,6 @@ void pins_init() {
     gpio_config(&io_conf);
 }
 
-void led_thread(void* pvParameters) {
-    const uint8_t led_colors[8][3] = {
-        {153, 0, 255},
-        {255, 0, 0},
-        {0, 255, 0},
-        {0, 0, 255},
-        {0, 255, 136},
-        {255, 238, 0},
-        {255, 157, 0},
-        {255, 255, 255},
-    };
-
-    uint8_t led_color_counter = 0;
-
-    while(1) {
-        ESP_LOGI(
-            "led_thread",
-            "Led set to %u, %u, %u",
-            led_colors[led_color_counter][0],
-            led_colors[led_color_counter][1],
-            led_colors[led_color_counter][2]);
-
-        led_set(
-            led_colors[led_color_counter][0],
-            led_colors[led_color_counter][1],
-            led_colors[led_color_counter][2]);
-        led_color_counter++;
-
-        if(led_color_counter >= (sizeof(led_colors) / sizeof(led_colors[1]))) {
-            led_color_counter = 0;
-        }
-
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
-}
-
 void app_main(void) {
     ESP_LOGI(TAG, "start");
 
@@ -86,7 +52,13 @@ void app_main(void) {
     led_init();
     led_set(0, 16, 0);
 
-    //xTaskCreate(&led_thread, "led_thread", 4096, NULL, 5, NULL);
+    // TODO uart and i2c share the same pins, need switching mechanics
+    // uart_init();
+    // uart_print("Uart inited");
+
+    // i2c_init();
+    // i2c_scan();
+
     xTaskCreate(&gdb_application_thread, "gdb_thread", 16 * 4096, NULL, 5, NULL);
 
     ESP_LOGI(TAG, "end");

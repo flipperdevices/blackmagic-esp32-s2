@@ -4,6 +4,8 @@ set(SOURCES
     "nvs.c"
     "wifi.c"
     "led.c"
+    "uart.c"
+    "i2c.c"
 )
 
 set(INCLUDES 
