@@ -12,23 +12,11 @@ int platform_gpio_get_level(int32_t gpio_num);
 
 #define PLATFORM_IDENT "ESP32-S2"
 
-#ifndef PRIx32
-#define PRIx32 "x"
-#endif
-
-#ifndef SCNx32
-#define SCNx32 "x"
-#endif
-
 #define NO_USB_PLEASE
 
 #define SET_RUN_STATE(state)
 #define SET_IDLE_STATE(state)
 #define SET_ERROR_STATE(state)
-#define DEBUG(x, ...) \
-    do {              \
-        ;             \
-    } while(0)
 
 #define TMS_SET_MODE() \
     do {               \
@@ -46,8 +34,7 @@ int platform_gpio_get_level(int32_t gpio_num);
 #endif
 
 // ON ESP32 we dont have the PORTS, this is dummy value until code is corrected
-#define SWCLK_PORT 0
-
+#define SWCLK_PORT (0)
 #define SWCLK_PIN (1)
 #define SWDIO_PIN (2)
 
