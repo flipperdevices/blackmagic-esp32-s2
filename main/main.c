@@ -42,15 +42,14 @@ void pins_init() {
 
 void app_main(void) {
     ESP_LOGI(TAG, "start");
+    led_init();
+    led_set_blue(255);
 
     usb_cdc_init();
     // nvs_init();
     // wifi_init();
 
     pins_init();
-
-    led_init();
-    led_set(0, 16, 0);
 
     // TODO uart and i2c share the same pins, need switching mechanics
     // uart_init();
@@ -60,6 +59,6 @@ void app_main(void) {
     // i2c_scan();
 
     xTaskCreate(&gdb_application_thread, "gdb_thread", 16 * 4096, NULL, 5, NULL);
-
+    led_set_blue(0);
     ESP_LOGI(TAG, "end");
 }

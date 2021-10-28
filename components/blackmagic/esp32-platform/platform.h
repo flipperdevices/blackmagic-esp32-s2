@@ -10,13 +10,18 @@ void platform_gpio_set(int32_t gpio_num);
 void platform_gpio_clear(int32_t gpio_num);
 int platform_gpio_get_level(int32_t gpio_num);
 
+void led_set_red(uint8_t value);
+void led_set_green(uint8_t value);
+void led_set_blue(uint8_t value);
+
 #define PLATFORM_IDENT "ESP32-S2"
 
 #define NO_USB_PLEASE
 
-#define SET_RUN_STATE(state)
-#define SET_IDLE_STATE(state)
-#define SET_ERROR_STATE(state)
+#define SET_RUN_STATE(state) \
+    { led_set_green(255 * state); }
+#define SET_IDLE_STATE(state) \
+    { led_set_red(255 * state); }
 
 #define TMS_SET_MODE() \
     do {               \
