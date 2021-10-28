@@ -144,7 +144,7 @@ enum ID_STM32L4 {
 	ID_STM32G49  = 0x479u, /* RM0440, Rev.6 */
 	ID_STM32L55  = 0x472u, /* RM0438, Rev.4 */
 	ID_STM32WLXX = 0x497u, /* RM0461, Rev.3, RM453, Rev.1 */
-	ID_STM32WBXX = 0x495u,
+	ID_STM32WBXX = 0x495u, /* RM0434, Rev.9 */
 };
 
 enum FAM_STM32L4 {
