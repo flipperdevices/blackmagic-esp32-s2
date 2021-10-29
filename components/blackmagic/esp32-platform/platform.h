@@ -27,8 +27,6 @@ void led_set_blue(uint8_t value);
     do {               \
     } while(0)
 
-#if 1
-
 #define TMS_PIN (-1)
 #define TDI_PIN (-1)
 #define TDO_PIN (-1)
@@ -36,7 +34,6 @@ void led_set_blue(uint8_t value);
 
 #undef PLATFORM_HAS_TRACESWO
 #define TRACESWO_PIN 18
-#endif
 
 // ON ESP32 we dont have the PORTS, this is dummy value until code is corrected
 #define SWCLK_PORT (0)

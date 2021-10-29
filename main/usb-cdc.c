@@ -67,8 +67,8 @@ void usb_cdc_rx_callback(int itf, cdcacm_event_t* event) {
                     xStreamBufferSend(furi_hal_vcp.rx_stream, buffer_rx, rx_size, portMAX_DELAY);
                 ESP_ERROR_CHECK(ret != rx_size);
                 // buffer_rx[rx_size] = '\0';
-                // ESP_LOGI(TAG, "rx< %s", buffer_rx);
-            }
+                // printf("%s", buffer_rx);
+                }
         } else {
             ESP_LOGE(TAG, "Read error");
         }

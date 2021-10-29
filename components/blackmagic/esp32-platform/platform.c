@@ -13,11 +13,12 @@ uint32_t swd_delay_cnt = 0;
 // static const char* TAG = "gdb-platform";
 
 void __attribute__((always_inline)) platform_swdio_mode_float(void) {
-    gpio_set_direction(SWDIO_PIN, GPIO_MODE_INPUT);
-    gpio_set_pull_mode(SWDIO_PIN, GPIO_FLOATING);
+    // gpio_set_direction(SWDIO_PIN, GPIO_MODE_INPUT);
+    // gpio_set_pull_mode(SWDIO_PIN, GPIO_FLOATING);
 
     // That doesn't work, only gods know why
-    // gpio_ll_input_enable(&GPIO, SWDIO_PIN);
+    gpio_ll_output_disable(&GPIO, SWDIO_PIN);
+    gpio_ll_input_enable(&GPIO, SWDIO_PIN);
     // gpio_ll_pullup_dis(&GPIO, SWDIO_PIN);
     // gpio_ll_pulldown_dis(&GPIO, SWDIO_PIN);
 }
