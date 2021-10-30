@@ -2,6 +2,7 @@ set(BM_DIR "blackmagic-fw")
 set(PLATFORM_DIR "esp32-platform")
 
 set(BM_SOURCES 
+    # ${PLATFORM_DIR}/custom/swd-spi-tap.c
     ${BM_DIR}/src/platforms/common/swdptap.c
     ${BM_DIR}/src/platforms/common/jtagtap.c
     ${BM_DIR}/src/gdb_main.c
