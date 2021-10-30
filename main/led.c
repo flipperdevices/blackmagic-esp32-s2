@@ -29,7 +29,7 @@ void led_init() {
         .timer_sel = LEDC_TIMER_0,
         .intr_type = LEDC_INTR_DISABLE,
         .gpio_num = LED_PIN_RED,
-        .duty = 255, // Set duty to 100%
+        .duty = 256, // Set duty to 100%
         .hpoint = 0};
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_red));
 
@@ -39,7 +39,7 @@ void led_init() {
         .timer_sel = LEDC_TIMER_0,
         .intr_type = LEDC_INTR_DISABLE,
         .gpio_num = LED_PIN_GREEN,
-        .duty = 255, // Set duty to 100%
+        .duty = 256, // Set duty to 100%
         .hpoint = 0};
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_green));
 
@@ -49,7 +49,7 @@ void led_init() {
         .timer_sel = LEDC_TIMER_0,
         .intr_type = LEDC_INTR_DISABLE,
         .gpio_num = LED_PIN_BLUE,
-        .duty = 255, // Set duty to 100%
+        .duty = 256, // Set duty to 100%
         .hpoint = 0};
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_blue));
 }
