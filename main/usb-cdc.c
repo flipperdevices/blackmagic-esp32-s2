@@ -1,3 +1,11 @@
+/**
+ * @file usb-cdc.c
+ * Do not forget to take pid's when implement own USB device class
+ * 
+ * https://github.com/espressif/usb-pids
+ * 
+ */
+
 #include <stdint.h>
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
@@ -68,7 +76,7 @@ void usb_cdc_rx_callback(int itf, cdcacm_event_t* event) {
                 ESP_ERROR_CHECK(ret != rx_size);
                 // buffer_rx[rx_size] = '\0';
                 // printf("%s", buffer_rx);
-                }
+            }
         } else {
             ESP_LOGE(TAG, "Read error");
         }
