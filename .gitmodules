@@ -1,3 +1,6 @@
 [submodule "components/blackmagic/blackmagic-fw"]
 	path = components/blackmagic/blackmagic-fw
 	url = https://github.com/flipperdevices/blackmagic.git
+[submodule "components/mlib/mlib"]
+	path = components/mlib/mlib
+	url = https://github.com/P-p-H-d/mlib.git
