@@ -21,17 +21,21 @@ esp_err_t nvs_save_string(const char* key, const mstring_t* value) {
     nvs_handle_t nvs_handle;
     esp_err_t err;
 
-    err = nvs_open(NVS_STORE, NVS_READWRITE, &nvs_handle);
-    if(err != ESP_OK) return err;
+    do {
+        err = nvs_open(NVS_STORE, NVS_READWRITE, &nvs_handle);
+        if(err != ESP_OK) break;
 
-    err = nvs_set_str(nvs_handle, key, mstring_get_cstr(value));
-    if(err != ESP_OK) return err;
+        err = nvs_set_str(nvs_handle, key, mstring_get_cstr(value));
+        if(err != ESP_OK) break;
 
-    err = nvs_commit(nvs_handle);
-    if(err != ESP_OK) return err;
+        err = nvs_commit(nvs_handle);
+        if(err != ESP_OK) break;
 
-    nvs_close(nvs_handle);
-    return ESP_OK;
+        nvs_close(nvs_handle);
+        err = ESP_OK;
+    } while(0);
+
+    return err;
 }
 
 esp_err_t nvs_load_string(const char* key, mstring_t* value) {
@@ -41,18 +45,17 @@ esp_err_t nvs_load_string(const char* key, mstring_t* value) {
 
     do {
         err = nvs_open(NVS_STORE, NVS_READWRITE, &nvs_handle);
-        if(err != ESP_OK) return err;
+        if(err != ESP_OK) break;
 
         size_t required_size = 0;
         err = nvs_get_str(nvs_handle, key, NULL, &required_size);
-        if(err != ESP_OK) return err;
+        if(err != ESP_OK) break;
 
         buffer = malloc(required_size + sizeof(uint32_t));
         err = nvs_get_str(nvs_handle, key, buffer, &required_size);
-        if(err != ESP_OK) return err;
+        if(err != ESP_OK) break;
 
         mstring_set(value, buffer);
-
         nvs_close(nvs_handle);
         err = ESP_OK;
     } while(0);
