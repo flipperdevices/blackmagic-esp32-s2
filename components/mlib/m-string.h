@@ -1,5 +1,5 @@
 /**
- * @file m_string.h
+ * @file m-string.h
  * 
  * M*Lib string wrapper, to prevent inline code pollution
  * 
@@ -33,6 +33,20 @@ void mstring_free(mstring_t* mstr);
  * @param text 
  */
 void mstring_set(mstring_t* mstr, const char* text);
+
+/**
+ * Reset string value
+ * @param mstr 
+ * @param text 
+ */
+void mstring_reset(mstring_t* mstr);
+
+/**
+ * Concatenate value
+ * @param mstr 
+ * @param text 
+ */
+void mstring_cat(mstring_t* mstr, const char* text);
 
 /**
  * Printf string value

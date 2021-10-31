@@ -1,5 +1,5 @@
 #include "mlib\m-string.h"
-#include "m_string.h"
+#include "m-string.h"
 
 struct mstring_t {
     string_t str;
@@ -25,6 +25,15 @@ void mstring_free(mstring_t* mstr) {
 
 void mstring_set(mstring_t* mstr, const char* text) {
     string_set_str(mstr->str, text);
+}
+
+void mstring_reset(mstring_t* mstr) {
+    string_reset(mstr->str);
+}
+
+void mstring_cat(mstring_t* mstr, const char* text) 
+{
+    string_cat_str(mstr->str, text);
 }
 
 int mstring_printf(mstring_t* mstr, const char format[], ...) {
