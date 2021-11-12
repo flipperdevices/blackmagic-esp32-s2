@@ -1,4 +1,4 @@
-#include "mlib\m-string.h"
+#include "mlib/m-string.h"
 #include "m-string.h"
 
 struct mstring_t {
@@ -31,8 +31,7 @@ void mstring_reset(mstring_t* mstr) {
     string_reset(mstr->str);
 }
 
-void mstring_cat(mstring_t* mstr, const char* text) 
-{
+void mstring_cat(mstring_t* mstr, const char* text) {
     string_cat_str(mstr->str, text);
 }
 
