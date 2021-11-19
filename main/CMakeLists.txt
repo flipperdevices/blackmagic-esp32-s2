@@ -6,6 +6,7 @@ set(SOURCES
     "led.c"
     "uart.c"
     "i2c.c"
+    "delay.c"
 )
 
 set(INCLUDES 

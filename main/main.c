@@ -46,8 +46,9 @@ void app_main(void) {
     led_set_blue(255);
 
     usb_cdc_init();
-    // nvs_init();
-    // wifi_init();
+
+    nvs_init();
+    wifi_init();
 
     pins_init();
 
