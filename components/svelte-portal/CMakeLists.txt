@@ -1,5 +1,5 @@
 idf_component_register(
-    EMBED_TXTFILES "public/index.html" "public/build/bundle.css" "public/build/bundle.js" 
+    EMBED_FILES "public/index.html" "public/build/bundle.css" "public/build/bundle.js" "public/assets/ega8.otf" "public/assets/favicon.ico"
     INCLUDE_DIRS ".")
 
 # add_custom_command(OUTPUT "public/build/bundle.css" "public/build/bundle.js"

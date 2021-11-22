@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "rollup -c",
-    "dev": "rollup -c -w",
+    "dev": "set \"HOST=0.0.0.0\" && rollup -c -w",
     "start": "sirv public --no-clear"
   },
   "devDependencies": {
