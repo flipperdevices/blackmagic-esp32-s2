@@ -47,6 +47,10 @@ const char* mstring_get_cstr(const mstring_t* mstr) {
     return string_get_cstr(mstr->str);
 }
 
+size_t mstring_length(const mstring_t* mstr) {
+    return string_size(mstr->str);
+}
+
 char mstring_get_char(const mstring_t* mstr, size_t index) {
     return string_get_char(mstr->str, index);
 }

@@ -1,10 +1,13 @@
 /**
  * @file m-string.h
+ * @author Sergey Gavrilov (who.just.the.doctor@gmail.com)
+ * @version 1.0
+ * @date 2021-11-21
  * 
  * M*Lib string wrapper, to prevent inline code pollution
- * 
  */
 #pragma once
+#include <stdlib.h>
 
 typedef struct mstring_t mstring_t;
 
@@ -63,6 +66,13 @@ int mstring_printf(mstring_t* mstr, const char format[], ...);
  * @return const char* 
  */
 const char* mstring_get_cstr(const mstring_t* mstr);
+
+/**
+ * Get constant pointer to string value
+ * @param mstr 
+ * @return size_t 
+ */
+size_t mstring_length(const mstring_t* mstr);
 
 /**
  * Get char at index
