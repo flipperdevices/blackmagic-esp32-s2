@@ -8,8 +8,8 @@
   import { onMount } from "svelte";
   import ButtonInline from "./ButtonInline.svelte";
 
-  // let server = "";
-  let server = "http://192.168.31.235";
+  let server = "";
+  //let server = "http://192.168.31.235";
 
   async function api_post(api, data) {
     const res = await fetch(api, {
