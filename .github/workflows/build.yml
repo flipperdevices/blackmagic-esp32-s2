@@ -1,0 +1,111 @@
+name: 'Build'
+
+on: 
+  push:
+    branches:
+      - dev
+      - "release*"
+    tags:
+      - '*'
+  pull_request:
+
+jobs:
+  build:
+    runs-on: [self-hosted, Office]
+    steps:
+      - name: Store UID
+        id: uid
+        run: |
+          id=`id -u $USER`
+          echo ::set-output name=id::$id
+
+      - name: Cleanup workspace
+        uses: AutoModality/action-clean@v1
+
+      - name: Decontaminate previous build leftovers
+        run: |
+          if [ -d .git ]
+          then
+            git submodule status \
+              || git checkout `git rev-list --max-parents=0 HEAD | tail -n 1`
+          fi
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Generate suffix and folder name
+        id: names
+        run: |
+          REF=${{ github.ref }}
+          if [[ ${{ github.event_name }} == 'pull_request' ]]; then
+            REF=${{ github.head_ref }}
+          fi
+          BRANCH_OR_TAG=${REF#refs/*/}
+          SHA=$(git rev-parse --short HEAD)
+          
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
+            SUFFIX=${BRANCH_OR_TAG//\//_}
+          else
+            SUFFIX=${BRANCH_OR_TAG//\//_}-$(date +'%d%m%Y')-${SHA}
+          fi
+
+          echo "::set-output name=artifacts-path::${BRANCH_OR_TAG}"
+          echo "::set-output name=suffix::${SUFFIX}"
+
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '17'
+          cache: 'npm'
+          cache-dependency-path: components/svelte-portal
+
+      - name: Install node dependencies
+        run: npm install
+        working-directory: components/svelte-portal
+
+      - name: Build captive portal
+        run: npm run build
+        working-directory: components/svelte-portal
+
+      - name: Build firmware
+        uses: espressif/esp-idf-ci-action@rust-latest
+
+      - name: Fix ownership
+        uses: peter-murray/reset-workspace-ownership-action@v1
+        with:
+          user_id: ${{ steps.uid.outputs.id }}
+
+      - name: Make artifacts directory
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        run: |
+          test -d artifacts && rm -rf artifacts || true
+          mkdir artifacts
+
+      - name: Move upload files
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        run: |
+          mv build/bootloader/bootloader.bin artifacts/
+          mv build/partition_table/partition-table.bin artifacts/
+          mv build/blackmagic.bin artifacts/
+
+      - name: Generate flash.command file
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        run: |
+          echo "esptool.py -p (PORT) -b 460800 --before default_reset --after hard_reset --chip esp32s2  write_flash $(tr '\n' ' ' < build/flash_args)" > artifacts/flash.command
+          sed -i 's/partition_table\///g' artifacts/flash.command
+          sed -i 's/bootloader\///g' artifacts/flash.command
+
+      - name: Upload artifacts to update server
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        uses: burnett01/rsync-deployments@5.1
+        with:
+          switches: -avzP --delete --mkpath
+          path: artifacts/
+          remote_path: ${{ secrets.RSYNC_DEPLOY_BASE_PATH }}${{steps.names.outputs.artifacts-path}}/
+          remote_host: ${{ secrets.RSYNC_DEPLOY_HOST }}
+          remote_port: ${{ secrets.RSYNC_DEPLOY_PORT }}
+          remote_user: ${{ secrets.RSYNC_DEPLOY_USER }}
+          remote_key: ${{ secrets.RSYNC_DEPLOY_KEY }}
