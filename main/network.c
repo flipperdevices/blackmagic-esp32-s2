@@ -237,16 +237,24 @@ WIFIMode network_init(void) {
 
     if(strcmp(mstring_get_cstr(ap_mode), ESP_WIFI_MODE_STA) == 0) {
         if(!network_connect_ap(ap_ssid, ap_pass)) {
+            mstring_set(ap_ssid, ESP_WIFI_SSID);
+            nvs_save_string("ap_ssid", ap_ssid);
+            mstring_set(ap_pass, ESP_WIFI_PASS);
+            nvs_save_string("ap_pass", ap_pass);
+            mstring_set(ap_mode, ESP_WIFI_MODE_AP);
+            nvs_save_string("ap_mode", ap_mode);
+
             ESP_LOGW(TAG, "cannot connect to AP");
+            network_start_ap(ap_ssid, ap_pass);
+            wifi_mode = WIFIModeAP;
         } else {
             wifi_mode = WIFIModeSTA;
         }
     } else {
         network_start_ap(ap_ssid, ap_pass);
         wifi_mode = WIFIModeAP;
-        mstring_set(ap_mode, ESP_WIFI_MODE_AP);
-        nvs_save_string("ap_mode", ap_mode);
     }
+
     mstring_free(ap_ssid);
     mstring_free(ap_pass);
 
