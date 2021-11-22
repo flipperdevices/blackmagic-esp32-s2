@@ -12,6 +12,7 @@
 #include "i2c.h"
 #include "network.h"
 #include "network-http.h"
+#include "network-uart.h"
 
 static const char* TAG = "main";
 
@@ -54,14 +55,9 @@ void app_main(void) {
     nvs_init();
     network_init();
     network_http_server_init();
+    network_uart_server_init();
 
     usb_cdc_init();
-
-    // tcp_web_log();
-    /*
-    tcp_uart_init();
-
-    pins_init();*/
 
     // TODO uart and i2c share the same pins, need switching mechanics
     // uart_init();

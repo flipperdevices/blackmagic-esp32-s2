@@ -8,6 +8,7 @@ set(SOURCES
     "delay.c"
     "network.c"
     "network-http.c"
+    "network-uart.c"
 )
 
 set(INCLUDES 
