@@ -173,7 +173,7 @@ void usb_cdc_init(void) {
     furi_hal_vcp.rx_stream = xStreamBufferCreate((CONFIG_USB_CDC_RX_BUFSIZE * 16), 1);
     furi_hal_vcp.rx_stream_full = false;
 
-    ESP_LOGI(TAG, "USB initialization");
+    ESP_LOGI(TAG, "init");
 
     gpio_config_t io_conf;
     io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
@@ -185,7 +185,7 @@ void usb_cdc_init(void) {
 
     gpio_set_level(USB_DN_PIN, 0);
     gpio_set_level(USB_DP_PIN, 0);
-    delay(100);
+    delay(500);
     gpio_set_level(USB_DN_PIN, 1);
     gpio_set_level(USB_DP_PIN, 1);
 
@@ -208,5 +208,5 @@ void usb_cdc_init(void) {
 
     ESP_ERROR_CHECK(tusb_cdc_acm_init(&amc_cfg));
 
-    ESP_LOGI(TAG, "USB initialization DONE");
+    ESP_LOGI(TAG, "init done");
 }
