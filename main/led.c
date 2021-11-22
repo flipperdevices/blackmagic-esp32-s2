@@ -1,5 +1,6 @@
 #include "led.h"
 #include <driver/ledc.h>
+#include <esp_log.h>
 #include <esp_err.h>
 
 #define LED_PIN_RED (6)
@@ -8,6 +9,8 @@
 
 #define LEDC_MODE LEDC_LOW_SPEED_MODE
 
+#define TAG "led"
+
 typedef enum {
     LedChannelRed,
     LedChannelGreen,
@@ -15,6 +18,7 @@ typedef enum {
 } ledc_channel;
 
 void led_init() {
+    ESP_LOGI(TAG, "init");
     ledc_timer_config_t ledc_timer = {
         .speed_mode = LEDC_MODE,
         .timer_num = LEDC_TIMER_0,
@@ -52,6 +56,7 @@ void led_init() {
         .duty = 256, // Set duty to 100%
         .hpoint = 0};
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_blue));
+    ESP_LOGI(TAG, "init done");
 }
 
 void led_set(uint8_t red, uint8_t green, uint8_t blue) {

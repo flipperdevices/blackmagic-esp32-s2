@@ -1,15 +1,17 @@
 #include <stdint.h>
 #include <esp_log.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <rom/ets_sys.h>
+
 #include "usb-cdc.h"
 #include "nvs.h"
-#include "wifi.h"
 #include "gdb_main.h"
 #include "led.h"
 #include "uart.h"
 #include "i2c.h"
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <rom/ets_sys.h>
+#include "network.h"
+#include "network-http.h"
 
 static const char* TAG = "main";
 
@@ -40,17 +42,26 @@ void pins_init() {
     gpio_config(&io_conf);
 }
 
+void tcp_uart_init(void);
+void tcp_web_log(void);
+
 void app_main(void) {
     ESP_LOGI(TAG, "start");
+
     led_init();
     led_set_blue(255);
 
+    nvs_init();
+    network_init();
+    network_http_server_init();
+
     usb_cdc_init();
 
-    nvs_init();
-    wifi_init();
+    // tcp_web_log();
+    /*
+    tcp_uart_init();
 
-    pins_init();
+    pins_init();*/
 
     // TODO uart and i2c share the same pins, need switching mechanics
     // uart_init();
@@ -59,7 +70,7 @@ void app_main(void) {
     // i2c_init();
     // i2c_scan();
 
-    xTaskCreate(&gdb_application_thread, "gdb_thread", 16 * 4096, NULL, 5, NULL);
+    // xTaskCreate(&gdb_application_thread, "gdb_thread", 16 * 4096, NULL, 5, NULL);
     led_set_blue(0);
     ESP_LOGI(TAG, "end");
 }

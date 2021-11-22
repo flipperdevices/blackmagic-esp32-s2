@@ -14,7 +14,7 @@ void nvs_init(void) {
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
-    ESP_LOGI(TAG, "done");
+    ESP_LOGI(TAG, "init done");
 }
 
 esp_err_t nvs_save_string(const char* key, const mstring_t* value) {
@@ -44,7 +44,7 @@ esp_err_t nvs_load_string(const char* key, mstring_t* value) {
     char* buffer = NULL;
 
     do {
-        err = nvs_open(NVS_STORE, NVS_READWRITE, &nvs_handle);
+        err = nvs_open(NVS_STORE, NVS_READONLY, &nvs_handle);
         if(err != ESP_OK) break;
 
         size_t required_size = 0;

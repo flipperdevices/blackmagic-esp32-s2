@@ -233,7 +233,7 @@ CONFIG_SPI_SLAVE_ISR_IN_IRAM=y
 #
 # UART configuration
 #
-# CONFIG_UART_ISR_IN_IRAM is not set
+CONFIG_UART_ISR_IN_IRAM=y
 # end of UART configuration
 # end of Driver configurations
 
