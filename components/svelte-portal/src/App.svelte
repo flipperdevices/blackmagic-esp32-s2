@@ -8,8 +8,8 @@
   import { onMount } from "svelte";
   import ButtonInline from "./ButtonInline.svelte";
 
-  let server = "";
-  // let server = "http://192.168.31.235";
+  // let server = "";
+  let server = "http://192.168.31.235";
 
   async function api_post(api, data) {
     const res = await fetch(api, {
@@ -109,14 +109,16 @@
     {:then json}
       <div>Nets:</div>
       {#each json.net_list as net}
-        <ButtonInline
-          style="normal"
-          value="[{net.ssid} {net.channel}ch {net.rssi}db {net.auth}]"
-          on:click={() => {
-            popup_select_net.close();
-            ssid_input.set_value(net.ssid);
-          }}
-        />
+        <div>
+          <ButtonInline
+            style="normal"
+            value="[{net.ssid} {net.channel}ch {net.rssi}db {net.auth}]"
+            on:click={() => {
+              popup_select_net.close();
+              ssid_input.set_value(net.ssid);
+            }}
+          />
+        </div>
       {/each}
     {:catch error}
       <error>{error.message}</error>

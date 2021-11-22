@@ -183,11 +183,11 @@ void usb_cdc_init(void) {
     io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
     gpio_config(&io_conf);
 
-    gpio_set_level(USB_DN_PIN, 0);
+    /*gpio_set_level(USB_DN_PIN, 0);
     gpio_set_level(USB_DP_PIN, 0);
     delay(500);
     gpio_set_level(USB_DN_PIN, 1);
-    gpio_set_level(USB_DP_PIN, 1);
+    gpio_set_level(USB_DP_PIN, 1);*/
 
     tinyusb_config_t tusb_cfg = {
         .descriptor = NULL, //Uses default descriptor specified in Menuconfig
