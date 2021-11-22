@@ -17,6 +17,7 @@
     box-shadow: none;
     border-radius: 0;
     display: inline-block;
+    max-width: 100%;
   }
 
   .black {
