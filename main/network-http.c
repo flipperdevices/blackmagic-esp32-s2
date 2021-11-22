@@ -144,6 +144,12 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
     case CHIP_ESP32S2:
         cJSON_AddStringToObject(root, "model", "ESP32-S2");
         break;
+    case CHIP_ESP32H2:
+        cJSON_AddStringToObject(root, "model", "ESP32-H2");
+        break;
+    case CHIP_ESP8684:
+        cJSON_AddStringToObject(root, "model", "ESP8684");
+        break;
     case CHIP_ESP32S3:
         cJSON_AddStringToObject(root, "model", "ESP32-S3");
         break;
