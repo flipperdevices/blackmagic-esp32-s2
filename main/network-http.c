@@ -5,6 +5,7 @@
 #include <cJSON.h>
 #include "network.h"
 #include "nvs.h"
+#include "led.h"
 
 #define TAG "network-http"
 #define JSON_ERROR(error_text) "{\"error\": \"" error_text "\"}"
@@ -129,6 +130,62 @@ static esp_err_t system_ping_handler(httpd_req_t* req) {
     return ESP_OK;
 }
 
+static esp_err_t system_tasks_handler(httpd_req_t* req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_type(req, "application/json");
+
+    uint32_t task_count = uxTaskGetNumberOfTasks();
+    TaskStatus_t* tasks = malloc(task_count * sizeof(TaskStatus_t));
+    task_count = uxTaskGetSystemState(tasks, task_count, NULL);
+
+    cJSON* root = cJSON_CreateObject();
+    cJSON_AddNumberToObject(root, "count", task_count);
+    cJSON* array = cJSON_AddArrayToObject(root, "list");
+
+    for(uint32_t i = 0; i < task_count; i++) {
+        cJSON* object = cJSON_CreateObject();
+        cJSON_AddNumberToObject(object, "handle", (uint32_t)tasks[i].xHandle);
+        cJSON_AddStringToObject(object, "name", tasks[i].pcTaskName);
+        cJSON_AddNumberToObject(object, "number", (uint32_t)tasks[i].xTaskNumber);
+
+        switch(tasks[i].eCurrentState) {
+        case eRunning:
+            cJSON_AddStringToObject(object, "state", "Running");
+            break;
+        case eReady:
+            cJSON_AddStringToObject(object, "state", "Ready");
+            break;
+        case eBlocked:
+            cJSON_AddStringToObject(object, "state", "Blocked");
+            break;
+        case eSuspended:
+            cJSON_AddStringToObject(object, "state", "Suspended");
+            break;
+        case eDeleted:
+            cJSON_AddStringToObject(object, "state", "Deleted");
+            break;
+        case eInvalid:
+            cJSON_AddStringToObject(object, "state", "Invalid");
+            break;
+        }
+        cJSON_AddNumberToObject(object, "current_priority", (uint32_t)tasks[i].uxCurrentPriority);
+        cJSON_AddNumberToObject(object, "base_priority", (uint32_t)tasks[i].uxBasePriority);
+        cJSON_AddNumberToObject(object, "runtime", (uint32_t)tasks[i].ulRunTimeCounter);
+        cJSON_AddNumberToObject(object, "stack_base", (uint32_t)tasks[i].pxStackBase);
+        cJSON_AddNumberToObject(object, "watermark", (uint32_t)tasks[i].usStackHighWaterMark);
+
+        cJSON_AddItemToArray(array, object);
+    }
+
+    const char* json_text = cJSON_Print(root);
+    httpd_resp_sendstr(req, json_text);
+    free((void*)json_text);
+    cJSON_Delete(root);
+    free((void*)tasks);
+
+    return ESP_OK;
+}
+
 static esp_err_t system_info_get_handler(httpd_req_t* req) {
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_set_type(req, "application/json");
@@ -136,7 +193,7 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
 
-    cJSON_AddStringToObject(root, "idf-version", IDF_VER);
+    cJSON_AddStringToObject(root, "idf_version", IDF_VER);
     switch(chip_info.model) {
     case CHIP_ESP32:
         cJSON_AddStringToObject(root, "model", "ESP32");
@@ -360,6 +417,76 @@ static esp_err_t wifi_list_get_handler(httpd_req_t* req) {
     return ESP_OK;
 }
 
+static esp_err_t gpio_led_set_handler(httpd_req_t* req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int total_length = req->content_len;
+    int current_length = 0;
+    char* buffer = malloc(256);
+    const char* error_text = JSON_ERROR("unknown error");
+    int received = 0;
+    int32_t led_red = -1;
+    int32_t led_green = -1;
+    int32_t led_blue = -1;
+    httpd_resp_set_type(req, "application/json");
+
+    if(total_length >= 256) {
+        error_text = JSON_ERROR("request too long");
+        goto err_fail;
+    }
+
+    while(current_length < total_length) {
+        received = httpd_req_recv(req, buffer + current_length, total_length);
+        if(received <= 0) {
+            error_text = JSON_ERROR("cannot receive request data");
+            goto err_fail;
+        }
+        current_length += received;
+    }
+    buffer[total_length] = '\0';
+
+    cJSON* root = cJSON_Parse(buffer);
+    cJSON* element;
+    element = cJSON_GetObjectItem(root, "red");
+    if(element != NULL && element->type == cJSON_Number) {
+        led_red = element->valuedouble;
+    }
+
+    element = cJSON_GetObjectItem(root, "green");
+    if(element != NULL && element->type == cJSON_Number) {
+        led_green = element->valuedouble;
+    }
+
+    element = cJSON_GetObjectItem(root, "blue");
+    if(element != NULL && element->type == cJSON_Number) {
+        led_blue = element->valuedouble;
+    }
+    cJSON_Delete(root);
+
+    if((led_red < 0 && led_green < 0 && led_blue < 0) ||
+       (led_red > 255 || led_green > 255 || led_blue > 255)) {
+        error_text = JSON_ERROR("[red], [green], [blue] must contain numbers in the range 0-255");
+        goto err_fail;
+    }
+
+    if(led_red >= 0) {
+        led_set_red(led_red);
+    }
+    if(led_green >= 0) {
+        led_set_green(led_green);
+    }
+    if(led_blue >= 0) {
+        led_set_blue(led_blue);
+    }
+
+    httpd_resp_sendstr(req, JSON_RESULT("OK"));
+    return ESP_OK;
+
+err_fail:
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, error_text);
+    free(buffer);
+    return ESP_FAIL;
+}
+
 void network_http_server_init(void) {
     ESP_LOGI(TAG, "init rest server");
 
@@ -381,6 +508,14 @@ void network_http_server_init(void) {
         .user_ctx = NULL};
     httpd_register_uri_handler(server, &system_ping_uri);
 
+    // tasks handler
+    httpd_uri_t system_tasks_uri = {
+        .uri = "/api/v1/system/tasks",
+        .method = HTTP_GET,
+        .handler = system_tasks_handler,
+        .user_ctx = NULL};
+    httpd_register_uri_handler(server, &system_tasks_uri);
+
     // system info handler
     httpd_uri_t system_info_get_uri = {
         .uri = "/api/v1/system/info",
@@ -388,6 +523,14 @@ void network_http_server_init(void) {
         .handler = system_info_get_handler,
         .user_ctx = NULL};
     httpd_register_uri_handler(server, &system_info_get_uri);
+
+    // gpio led set handler
+    httpd_uri_t gpio_led_set_uri = {
+        .uri = "/api/v1/gpio/led",
+        .method = HTTP_POST,
+        .handler = gpio_led_set_handler,
+        .user_ctx = NULL};
+    httpd_register_uri_handler(server, &gpio_led_set_uri);
 
     // wifi nets handler
     httpd_uri_t wifi_list_get_uri = {
