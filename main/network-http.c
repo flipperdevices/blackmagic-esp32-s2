@@ -3,16 +3,17 @@
 #include <svelte-portal.h>
 #include <esp_log.h>
 #include <cJSON.h>
+#include <esp_wifi.h>
 #include "network.h"
 #include "nvs.h"
 #include "led.h"
+#include "helpers.h"
 
 #define TAG "network-http"
 #define JSON_ERROR(error_text) "{\"error\": \"" error_text "\"}"
 #define JSON_RESULT(result_text) "{\"result\": \"" result_text "\"}"
 
 #define WIFI_SCAN_SIZE 20
-#include "esp_wifi.h"
 
 static const char* get_auth_mode(int authmode) {
     switch(authmode) {
@@ -487,11 +488,65 @@ err_fail:
     return ESP_FAIL;
 }
 
+const httpd_uri_t uri_handlers[] = {
+
+    /*************** SYSTEM ***************/
+
+    {.uri = "/api/v1/system/ping",
+     .method = HTTP_GET,
+     .handler = system_ping_handler,
+     .user_ctx = NULL},
+
+    {.uri = "/api/v1/system/tasks",
+     .method = HTTP_GET,
+     .handler = system_tasks_handler,
+     .user_ctx = NULL},
+
+    {.uri = "/api/v1/system/info",
+     .method = HTTP_GET,
+     .handler = system_info_get_handler,
+     .user_ctx = NULL},
+
+    /*************** GPIO ***************/
+
+    {.uri = "/api/v1/gpio/led",
+     .method = HTTP_POST,
+     .handler = gpio_led_set_handler,
+     .user_ctx = NULL},
+
+    /*************** WIFI ***************/
+
+    {.uri = "/api/v1/wifi/list",
+     .method = HTTP_GET,
+     .handler = wifi_list_get_handler,
+     .user_ctx = NULL},
+
+    {.uri = "/api/v1/wifi/mode",
+     .method = HTTP_GET,
+     .handler = wifi_mode_get_handler,
+     .user_ctx = NULL},
+
+    {.uri = "/api/v1/wifi/set_credenitals",
+     .method = HTTP_POST,
+     .handler = wifi_set_credenitals_handler,
+     .user_ctx = NULL},
+
+    {.uri = "/api/v1/wifi/get_credenitals",
+     .method = HTTP_GET,
+     .handler = wifi_get_credenitals_handler,
+     .user_ctx = NULL},
+
+    /*************** HTTP ***************/
+
+    {.uri = "/*", .method = HTTP_GET, .handler = http_common_get_handler, .user_ctx = NULL},
+};
+
 void network_http_server_init(void) {
     ESP_LOGI(TAG, "init rest server");
 
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.max_uri_handlers = COUNT_OF(uri_handlers);
     config.uri_match_fn = httpd_uri_match_wildcard;
 
     ESP_LOGI(TAG, "starting http server");
@@ -500,74 +555,9 @@ void network_http_server_init(void) {
         return;
     }
 
-    // ping handler
-    httpd_uri_t system_ping_uri = {
-        .uri = "/api/v1/system/ping",
-        .method = HTTP_GET,
-        .handler = system_ping_handler,
-        .user_ctx = NULL};
-    httpd_register_uri_handler(server, &system_ping_uri);
-
-    // tasks handler
-    httpd_uri_t system_tasks_uri = {
-        .uri = "/api/v1/system/tasks",
-        .method = HTTP_GET,
-        .handler = system_tasks_handler,
-        .user_ctx = NULL};
-    httpd_register_uri_handler(server, &system_tasks_uri);
-
-    // system info handler
-    httpd_uri_t system_info_get_uri = {
-        .uri = "/api/v1/system/info",
-        .method = HTTP_GET,
-        .handler = system_info_get_handler,
-        .user_ctx = NULL};
-    httpd_register_uri_handler(server, &system_info_get_uri);
-
-    // gpio led set handler
-    httpd_uri_t gpio_led_set_uri = {
-        .uri = "/api/v1/gpio/led",
-        .method = HTTP_POST,
-        .handler = gpio_led_set_handler,
-        .user_ctx = NULL};
-    httpd_register_uri_handler(server, &gpio_led_set_uri);
-
-    // wifi nets handler
-    httpd_uri_t wifi_list_get_uri = {
-        .uri = "/api/v1/wifi/list",
-        .method = HTTP_GET,
-        .handler = wifi_list_get_handler,
-        .user_ctx = NULL};
-    httpd_register_uri_handler(server, &wifi_list_get_uri);
-
-    // wifi mode handler
-    httpd_uri_t wifi_mode_get_uri = {
-        .uri = "/api/v1/wifi/mode",
-        .method = HTTP_GET,
-        .handler = wifi_mode_get_handler,
-        .user_ctx = NULL};
-    httpd_register_uri_handler(server, &wifi_mode_get_uri);
-
-    // wifi set credenitals handler
-    httpd_uri_t wifi_set_credenitals_uri = {
-        .uri = "/api/v1/wifi/set_credenitals",
-        .method = HTTP_POST,
-        .handler = wifi_set_credenitals_handler,
-        .user_ctx = NULL};
-    httpd_register_uri_handler(server, &wifi_set_credenitals_uri);
-
-    // wifi get credenitals handler
-    httpd_uri_t wifi_get_credenitals_uri = {
-        .uri = "/api/v1/wifi/get_credenitals",
-        .method = HTTP_GET,
-        .handler = wifi_get_credenitals_handler,
-        .user_ctx = NULL};
-    httpd_register_uri_handler(server, &wifi_get_credenitals_uri);
-
-    // common http handler
-    httpd_uri_t common_get_uri = {
-        .uri = "/*", .method = HTTP_GET, .handler = http_common_get_handler, .user_ctx = NULL};
-    httpd_register_uri_handler(server, &common_get_uri);
+    for(size_t i = 0; i < COUNT_OF(uri_handlers); i++) {
+        ESP_ERROR_CHECK(httpd_register_uri_handler(server, &uri_handlers[i]));
+    }
 
     ESP_LOGI(TAG, "init rest server done");
 }
