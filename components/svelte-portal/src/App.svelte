@@ -5,11 +5,12 @@
   import Spinner from "./Spinner.svelte";
   import SpinnerBig from "./SpinnerBig.svelte";
   import Select from "./Select.svelte";
-  import { onMount } from "svelte";
   import ButtonInline from "./ButtonInline.svelte";
 
   let server = "";
-  //let server = "http://192.168.31.235";
+  if (development_mode) {
+    server = "http://192.168.31.235";
+  }
 
   async function api_post(api, data) {
     const res = await fetch(api, {
@@ -38,9 +39,10 @@
   let ssid_input;
   let password_input;
 
-  onMount(() => {
-    //popup_select_net.show();
-  });
+  let current_tab = "WiFi";
+  if (localStorage.getItem("current_tab") != null) {
+    current_tab = localStorage.getItem("current_tab");
+  }
 
   async function save_settings() {
     popup_message_text = "";
@@ -54,53 +56,142 @@
       popup_message_text = "Saved!";
     });
   }
+
+  function change_tab(tab) {
+    current_tab = tab;
+    localStorage.setItem("current_tab", current_tab);
+  }
 </script>
 
 <main>
-  <tabs><tab class="selected">WiFi</tab><tab>SYS</tab><tab>GDB</tab></tabs>
+  <tabs>
+    <tab
+      class:selected={current_tab == "WiFi"}
+      on:click={() => {
+        change_tab("WiFi");
+      }}
+    >
+      WiFi
+    </tab>
+
+    <tab
+      class:selected={current_tab == "SYS"}
+      on:click={() => {
+        change_tab("SYS");
+      }}
+    >
+      SYS
+    </tab>
+
+    <tab
+      class:selected={current_tab == "PS"}
+      on:click={() => {
+        change_tab("PS");
+      }}
+    >
+      PS
+    </tab>
+  </tabs>
+
   <tabs-content>
-    <tab-content>
-      <div class="grid">
-        {#await api_get(server + "/api/v1/wifi/get_credenitals")}
-          <div class="value-name">Mode:</div>
-          <div><Spinner /></div>
-          <div class="value-name">SSID:</div>
-          <div><Spinner /></div>
-          <div class="value-name">Pass:</div>
-          <div><Spinner /></div>
+    {#if current_tab == "WiFi"}
+      <tab-content>
+        <div class="grid">
+          {#await api_get(server + "/api/v1/wifi/get_credenitals")}
+            <div class="value-name">Mode:</div>
+            <div><Spinner /></div>
+            <div class="value-name">SSID:</div>
+            <div><Spinner /></div>
+            <div class="value-name">Pass:</div>
+            <div><Spinner /></div>
+          {:then json}
+            <div class="value-name">Mode:</div>
+            <div>
+              <Select
+                bind:this={mode_select}
+                items={[
+                  { text: "STA", value: "STA" },
+                  { text: "AP", value: "AP" },
+                ]}
+                value={json.mode}
+              />
+            </div>
+
+            <div class="value-name">SSID:</div>
+            <div>
+              <Input value={json.ssid} bind:this={ssid_input} /><ButtonInline
+                value="+"
+                on:click={popup_select_net.show}
+              />
+            </div>
+
+            <div class="value-name">Pass:</div>
+            <div>
+              <Input value={json.pass} bind:this={password_input} />
+            </div>
+          {:catch error}
+            <error>{error.message}</error>
+          {/await}
+        </div>
+        <div style="margin-top: 10px;">
+          <Button value="SAVE" on:click={save_settings} />
+        </div>
+      </tab-content>
+    {/if}
+
+    {#if current_tab == "SYS"}
+      <tab-content>
+        <div class="grid">
+          {#await api_get(server + "/api/v1/system/info")}
+            <div class="value-name">IDF ver:</div>
+            <div><Spinner /></div>
+          {:then json}
+            <div class="value-name">IDF ver:</div>
+            <div>{json.idf_version}</div>
+            <div class="value-name">Model:</div>
+            <div>{json.model}.{json.revision} {json.cores}-core</div>
+            <div class="value-name">Min free:</div>
+            <div>{json.heap.minimum_free_bytes}</div>
+            <div class="value-name">Free:</div>
+            <div>{json.heap.total_free_bytes}</div>
+            <div class="value-name">Alloc:</div>
+            <div>{json.heap.total_allocated_bytes}</div>
+            <div class="value-name">Max block:</div>
+            <div>{json.heap.largest_free_block}</div>
+          {:catch error}
+            <error>{error.message}</error>
+          {/await}
+        </div>
+      </tab-content>
+    {/if}
+
+    {#if current_tab == "PS"}
+      <tab-content>
+        {#await api_get(server + "/api/v1/system/tasks")}
+          <span>Name</span>
+          <span><Spinner /></span>
         {:then json}
-          <div class="value-name">Mode:</div>
-          <div>
-            <Select
-              bind:this={mode_select}
-              items={[
-                { text: "STA", value: "STA" },
-                { text: "AP", value: "AP" },
-              ]}
-              value={json.mode}
-            />
-          </div>
-
-          <div class="value-name">SSID:</div>
-          <div>
-            <Input value={json.ssid} bind:this={ssid_input} /><ButtonInline
-              value="+"
-              on:click={popup_select_net.show}
-            />
-          </div>
-
-          <div class="value-name">Pass:</div>
-          <div>
-            <Input value={json.pass} bind:this={password_input} />
-          </div>
+          <task-list>
+            <span>Name</span>
+            <span>State</span>
+            <span>Handle</span>
+            <span>Stack base</span>
+            <span>WMRK</span>
+            {#each json.list.sort(function (a, b) {
+              return a.number - b.number;
+            }) as task}
+              <span>{task.name}</span>
+              <span>{task.state}</span>
+              <span>0x{task.handle.toString(16).toUpperCase()}</span>
+              <span>0x{task.stack_base.toString(16).toUpperCase()}</span>
+              <span>{task.watermark}</span>
+            {/each}
+          </task-list>
         {:catch error}
           <error>{error.message}</error>
         {/await}
-      </div>
-      <div style="margin-top: 10px;">
-        <Button value="SAVE" on:click={save_settings} />
-      </div>
-    </tab-content>
+      </tab-content>
+    {/if}
   </tabs-content>
 
   <Popup bind:this={popup_select_net}>
@@ -139,7 +230,7 @@
     border: 4px dashed #000;
     margin: 10px auto;
     padding: 10px;
-    max-width: 500px;
+    max-width: 800px;
   }
 
   * {
@@ -222,5 +313,11 @@
 
   .value-name {
     text-align: right;
+  }
+
+  task-list {
+    display: inline-grid;
+    grid-template-columns: auto auto auto auto auto;
+    width: 100%;
   }
 </style>
