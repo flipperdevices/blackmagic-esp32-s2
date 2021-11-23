@@ -11,6 +11,12 @@
 
 #define TAG "led"
 
+#define LED_PWM_MAX_VAL 256U
+
+#define LED_RED_MAX_VAL 20U
+#define LED_GREEN_MAX_VAL 20U
+#define LED_BLUE_MAX_VAL 20U
+
 typedef enum {
     LedChannelRed,
     LedChannelGreen,
@@ -33,7 +39,7 @@ void led_init() {
         .timer_sel = LEDC_TIMER_0,
         .intr_type = LEDC_INTR_DISABLE,
         .gpio_num = LED_PIN_RED,
-        .duty = 256, // Set duty to 100%
+        .duty = LED_PWM_MAX_VAL, // Set duty to 100%
         .hpoint = 0};
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_red));
 
@@ -43,7 +49,7 @@ void led_init() {
         .timer_sel = LEDC_TIMER_0,
         .intr_type = LEDC_INTR_DISABLE,
         .gpio_num = LED_PIN_GREEN,
-        .duty = 256, // Set duty to 100%
+        .duty = LED_PWM_MAX_VAL, // Set duty to 100%
         .hpoint = 0};
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_green));
 
@@ -53,7 +59,7 @@ void led_init() {
         .timer_sel = LEDC_TIMER_0,
         .intr_type = LEDC_INTR_DISABLE,
         .gpio_num = LED_PIN_BLUE,
-        .duty = 256, // Set duty to 100%
+        .duty = LED_PWM_MAX_VAL, // Set duty to 100%
         .hpoint = 0};
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel_blue));
     ESP_LOGI(TAG, "init done");
@@ -66,16 +72,19 @@ void led_set(uint8_t red, uint8_t green, uint8_t blue) {
 }
 
 void led_set_red(uint8_t value) {
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LedChannelRed, 256U - value));
+    uint32_t pwm_value = ((uint32_t)value * LED_RED_MAX_VAL) / 255;
+    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LedChannelRed, LED_PWM_MAX_VAL - pwm_value));
     ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LedChannelRed));
 }
 
 void led_set_green(uint8_t value) {
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LedChannelGreen, 256U - value));
+    uint32_t pwm_value = ((uint32_t)value * LED_GREEN_MAX_VAL) / 255;
+    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LedChannelGreen, LED_PWM_MAX_VAL - pwm_value));
     ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LedChannelGreen));
 }
 
 void led_set_blue(uint8_t value) {
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LedChannelBlue, 256U - value));
+    uint32_t pwm_value = ((uint32_t)value * LED_BLUE_MAX_VAL) / 255;
+    ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LedChannelBlue, LED_PWM_MAX_VAL - pwm_value));
     ESP_ERROR_CHECK(ledc_update_duty(LEDC_MODE, LedChannelBlue));
 }
