@@ -2,3 +2,4 @@
 /build
 /sdkconfig.old
 /main/wifi-credentials.h
+.DS_Store
