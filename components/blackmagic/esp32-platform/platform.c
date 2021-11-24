@@ -16,11 +16,9 @@ void __attribute__((always_inline)) platform_swdio_mode_float(void) {
     // gpio_set_direction(SWDIO_PIN, GPIO_MODE_INPUT);
     // gpio_set_pull_mode(SWDIO_PIN, GPIO_FLOATING);
 
-    // That doesn't work, only gods know why
+    // Faster variant
     gpio_ll_output_disable(&GPIO, SWDIO_PIN);
     gpio_ll_input_enable(&GPIO, SWDIO_PIN);
-    // gpio_ll_pullup_dis(&GPIO, SWDIO_PIN);
-    // gpio_ll_pulldown_dis(&GPIO, SWDIO_PIN);
 }
 
 void __attribute__((always_inline)) platform_swdio_mode_drive(void) {

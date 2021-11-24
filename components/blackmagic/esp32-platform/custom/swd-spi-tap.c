@@ -1,5 +1,9 @@
 /**
  * @file swd-spi-tap.c
+ * @author Sergey Gavrilov (who.just.the.doctor@gmail.com)
+ * @version 1.0
+ * @date 2021-11-25
+ * 
  * Does not work due to bug with switching 3-wire mode to RX.
  * 
  * https://github.com/espressif/esp-idf/issues/7800
