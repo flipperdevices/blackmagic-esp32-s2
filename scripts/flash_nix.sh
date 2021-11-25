@@ -25,5 +25,5 @@ fi
 
 echo "Usage: $0 <serial_port>"
 echo "Available ports:"
-find /dev/tty* | grep -E "ACM|USB" --color=never
+find /dev/tty* | grep -E "ACM|USB|\." --color=never
 exit 255;
