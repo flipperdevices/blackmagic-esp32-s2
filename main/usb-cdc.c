@@ -185,7 +185,7 @@ void usb_cdc_init(void) {
 
     gpio_set_level(USB_DN_PIN, 0);
     gpio_set_level(USB_DP_PIN, 0);
-    delay(500);
+    delay(100);
     gpio_set_level(USB_DN_PIN, 1);
     gpio_set_level(USB_DP_PIN, 1);
 
