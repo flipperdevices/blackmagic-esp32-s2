@@ -28,3 +28,9 @@ WIFIMode network_init(void);
  * @return WIFIMode 
  */
 WIFIMode network_get_mode(void);
+
+/**
+ * Get current IP address
+ * @return uint32_t 
+ */
+uint32_t network_get_ip(void);

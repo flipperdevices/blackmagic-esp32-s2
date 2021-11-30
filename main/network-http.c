@@ -4,6 +4,7 @@
 #include <esp_log.h>
 #include <cJSON.h>
 #include <esp_wifi.h>
+#include <esp_system.h>
 #include "network.h"
 #include "nvs.h"
 #include "led.h"
@@ -222,6 +223,21 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
     cJSON_AddNumberToObject(heap, "total_allocated_bytes", info.total_allocated_bytes);
     cJSON_AddNumberToObject(heap, "largest_free_block", info.largest_free_block);
     cJSON_AddNumberToObject(heap, "minimum_free_bytes", info.minimum_free_bytes);
+
+    // ip addr
+    cJSON_AddNumberToObject(root, "ip", network_get_ip());
+
+    // mac
+    uint8_t mac_addr[6] = {0};
+    ESP_ERROR_CHECK(esp_read_mac(mac_addr, ESP_MAC_WIFI_STA));
+
+    cJSON* mac = cJSON_AddArrayToObject(root, "mac");
+    cJSON_AddItemToArray(mac, cJSON_CreateNumber(mac_addr[0]));
+    cJSON_AddItemToArray(mac, cJSON_CreateNumber(mac_addr[1]));
+    cJSON_AddItemToArray(mac, cJSON_CreateNumber(mac_addr[2]));
+    cJSON_AddItemToArray(mac, cJSON_CreateNumber(mac_addr[3]));
+    cJSON_AddItemToArray(mac, cJSON_CreateNumber(mac_addr[4]));
+    cJSON_AddItemToArray(mac, cJSON_CreateNumber(mac_addr[5]));
 
     const char* json_text = cJSON_Print(root);
     httpd_resp_sendstr(req, json_text);

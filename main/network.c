@@ -7,6 +7,7 @@
 #include <m-string.h>
 #include <mdns.h>
 #include <lwip/apps/netbiosns.h>
+#include <tcpip_adapter.h>
 
 #define TAG "network"
 
@@ -35,6 +36,17 @@ static EventGroupHandle_t wifi_event_group;
 
 static WIFIMode wifi_mode = WIFIModeSTA;
 static int s_retry_num = 0;
+
+uint32_t network_get_ip(void) {
+    tcpip_adapter_ip_info_t ip_info;
+    if(wifi_mode == WIFIModeSTA) {
+        tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+    } else {
+        tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+    }
+
+    return ip_info.ip.addr;
+}
 
 static void
     sta_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {

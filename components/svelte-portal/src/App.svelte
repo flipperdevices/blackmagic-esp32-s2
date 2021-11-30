@@ -9,7 +9,7 @@
 
   let server = "";
   if (development_mode) {
-    server = "http://192.168.31.235";
+    server = "http://192.168.31.81";
   }
 
   async function api_post(api, data) {
@@ -60,6 +60,29 @@
   function change_tab(tab) {
     current_tab = tab;
     localStorage.setItem("current_tab", current_tab);
+  }
+
+  function print_mac(mac_array) {
+    let str = "";
+    for (let index = 0; index < mac_array.length; index++) {
+      str += mac_array[index].toString(16).padStart(2, "0");
+      if (index < mac_array.length - 1) {
+        str += ":";
+      }
+    }
+    return str;
+  }
+
+  function print_ip(ip_addr) {
+    var byteArray = [0, 0, 0, 0];
+
+    for (var index = 0; index < byteArray.length; index++) {
+      var byte = ip_addr & 0xff;
+      byteArray[index] = byte;
+      ip_addr = ip_addr >> 8;
+    }
+
+    return byteArray.join(".");
   }
 </script>
 
@@ -143,9 +166,13 @@
       <tab-content>
         <div class="grid">
           {#await api_get(server + "/api/v1/system/info")}
-            <div class="value-name">IDF ver:</div>
+            <div class="value-name">IP:</div>
             <div><Spinner /></div>
           {:then json}
+            <div class="value-name">IP:</div>
+            <div>{print_ip(json.ip)}</div>
+            <div class="value-name">Mac:</div>
+            <div>{print_mac(json.mac)}</div>
             <div class="value-name">IDF ver:</div>
             <div>{json.idf_version}</div>
             <div class="value-name">Model:</div>
