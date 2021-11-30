@@ -1,7 +1,14 @@
 #pragma once
 
+/**
+ * Init usb subsystem
+ */
 void usb_cdc_init(void);
 
-size_t usb_cdc_rx(uint8_t* buffer, size_t size);
-size_t usb_cdc_rx_with_timeout(uint8_t* buffer, size_t size, uint32_t timeout);
-void usb_cdc_tx_char(uint8_t c, bool flush);
+/**
+ * Send data
+ * @param buffer data
+ * @param size data size
+ * @param flush
+ */
+void usb_cdc_send(uint8_t* buffer, size_t size, bool flush);

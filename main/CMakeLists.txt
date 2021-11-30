@@ -9,6 +9,7 @@ set(SOURCES
     "network.c"
     "network-http.c"
     "network-uart.c"
+    "network-gdb.c"
 )
 
 set(INCLUDES 

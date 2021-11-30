@@ -13,6 +13,9 @@
 #include "network.h"
 #include "network-http.h"
 #include "network-uart.h"
+#include "network-gdb.h"
+
+#include <gdb-glue.h>
 
 static const char* TAG = "main";
 
@@ -49,6 +52,8 @@ void tcp_web_log(void);
 void app_main(void) {
     ESP_LOGI(TAG, "start");
 
+    gdb_glue_init();
+
     led_init();
     led_set_blue(255);
 
@@ -56,6 +61,7 @@ void app_main(void) {
     network_init();
     network_http_server_init();
     network_uart_server_init();
+    network_gdb_server_init();
 
     usb_cdc_init();
 
