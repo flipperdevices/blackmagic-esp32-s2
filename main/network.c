@@ -99,16 +99,16 @@ static void network_start_ap(mstring_t* ap_ssid, mstring_t* ap_pass) {
     memcpy(
         &wifi_config.ap.ssid,
         mstring_get_cstr(ap_ssid),
-        min(sizeof(wifi_config.ap.ssid), mstring_length(ap_ssid)));
+        min(sizeof(wifi_config.ap.ssid), mstring_size(ap_ssid)));
 
     memcpy(
         &wifi_config.ap.password,
         mstring_get_cstr(ap_pass),
-        min(sizeof(wifi_config.ap.password), mstring_length(ap_pass)));
+        min(sizeof(wifi_config.ap.password), mstring_size(ap_pass)));
 
-    wifi_config.ap.ssid_len = mstring_length(ap_ssid);
+    wifi_config.ap.ssid_len = mstring_size(ap_ssid);
 
-    if(mstring_length(ap_pass) == 0) {
+    if(mstring_size(ap_pass) == 0) {
         wifi_config.ap.authmode = WIFI_AUTH_OPEN;
     }
 
@@ -145,11 +145,11 @@ static bool network_connect_ap(mstring_t* ap_ssid, mstring_t* ap_pass) {
     memcpy(
         &wifi_config.sta.ssid,
         mstring_get_cstr(ap_ssid),
-        min(sizeof(wifi_config.sta.ssid), mstring_length(ap_ssid)));
+        min(sizeof(wifi_config.sta.ssid), mstring_size(ap_ssid)));
     memcpy(
         &wifi_config.sta.password,
         mstring_get_cstr(ap_pass),
-        min(sizeof(wifi_config.sta.password), mstring_length(ap_pass)));
+        min(sizeof(wifi_config.sta.password), mstring_size(ap_pass)));
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
@@ -226,7 +226,7 @@ WIFIMode network_init(void) {
         nvs_save_string("ap_pass", ap_pass);
     }
 
-    if(mstring_length(ap_pass) < 8) {
+    if(mstring_size(ap_pass) < 8) {
         ESP_LOGW(TAG, "too short [ap_pass]");
         mstring_set(ap_ssid, ESP_WIFI_SSID);
         nvs_save_string("ap_ssid", ap_ssid);
@@ -236,7 +236,7 @@ WIFIMode network_init(void) {
         nvs_save_string("ap_mode", ap_mode);
     }
 
-    if(mstring_length(ap_ssid) < 1 || mstring_length(ap_ssid) > 32) {
+    if(mstring_size(ap_ssid) < 1 || mstring_size(ap_ssid) > 32) {
         ESP_LOGW(TAG, "too short or too long [ap_ssid]");
         mstring_set(ap_ssid, ESP_WIFI_SSID);
         nvs_save_string("ap_ssid", ap_ssid);

@@ -8,7 +8,7 @@
 #include "nvs.h"
 #include "gdb_main.h"
 #include "led.h"
-#include "uart.h"
+#include "cli-uart.h"
 #include "i2c.h"
 #include "network.h"
 #include "network-http.h"
@@ -65,10 +65,9 @@ void app_main(void) {
 
     usb_cdc_init();
 
-    // TODO uart and i2c share the same pins, need switching mechanics
-    // uart_init();
-    // uart_print("Uart inited");
+    cli_uart_init();
 
+    // TODO uart and i2c share the same pins, need switching mechanics
     // i2c_init();
     // i2c_scan();
 

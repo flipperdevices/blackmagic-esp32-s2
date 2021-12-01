@@ -361,11 +361,11 @@ static esp_err_t wifi_set_credenitals_handler(httpd_req_t* req) {
         goto err_fail;
     }
 
-    if(mstring_length(ap_pass) < 8) {
+    if(mstring_size(ap_pass) < 8) {
         error_text = JSON_ERROR("too short value in [pass]");
         goto err_fail;
     }
-    if(mstring_length(ap_ssid) < 1) {
+    if(mstring_size(ap_ssid) < 1) {
         error_text = JSON_ERROR("too short value in [ssid]");
         goto err_fail;
     }

@@ -3,13 +3,16 @@ set(SOURCES
     "usb-cdc.c"
     "nvs.c"
     "led.c"
-    "uart.c"
+    "cli-uart.c"
     "i2c.c"
     "delay.c"
     "network.c"
     "network-http.c"
     "network-uart.c"
     "network-gdb.c"
+    "cli.c"
+    "cli-uart.c"
+    "cli-commands.c"
 )
 
 set(INCLUDES 
