@@ -7,7 +7,6 @@
 #include <m-string.h>
 #include <mdns.h>
 #include <lwip/apps/netbiosns.h>
-#include <tcpip_adapter.h>
 
 #define TAG "network"
 
