@@ -1,10 +1,15 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <esp_mac.h>
 #include "cli.h"
+#include "cli-args.h"
 #include "cli-commands.h"
 #include "helpers.h"
 
+void cli_id(Cli* cli, mstring_t* args);
 void cli_help(Cli* cli, mstring_t* args);
+void cli_version(Cli* cli, mstring_t* args);
+void cli_gpio_set(Cli* cli, mstring_t* args);
 
 const CliItem cli_items[] = {
     {
@@ -12,8 +17,20 @@ const CliItem cli_items[] = {
         .callback = cli_help,
     },
     {
+        .name = "id",
+        .callback = cli_id,
+    },
+    {
         .name = "help",
         .callback = cli_help,
+    },
+    {
+        .name = "version",
+        .callback = cli_version,
+    },
+    {
+        .name = "gpio_set",
+        .callback = cli_gpio_set,
     },
 };
 
@@ -27,4 +44,24 @@ void cli_help(Cli* cli, mstring_t* args) {
             cli_write_eol(cli);
         }
     }
+}
+
+void cli_id(Cli* cli, mstring_t* args) {
+    uint8_t mac_addr[6] = {0};
+    ESP_ERROR_CHECK(esp_read_mac(mac_addr, ESP_MAC_WIFI_STA));
+    cli_printf(
+        cli,
+        "%02X%02X%02X%02X%02X%02X",
+        mac_addr[0],
+        mac_addr[1],
+        mac_addr[2],
+        mac_addr[3],
+        mac_addr[4],
+        mac_addr[5]);
+}
+
+void cli_version(Cli* cli, mstring_t* args) {
+    cli_printf(cli, "IDF version: %s", IDF_VER);
+    cli_write_eol(cli);
+    cli_printf(cli, "FW version: %s", "0.1");
 }

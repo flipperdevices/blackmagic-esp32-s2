@@ -23,6 +23,7 @@ typedef enum {
 
 struct Cli {
     mstring_t* line;
+    mstring_t* prev_line;
     size_t cursor_position;
 
     void* context;
@@ -33,6 +34,7 @@ struct Cli {
 Cli* cli_init(void) {
     Cli* cli = malloc(sizeof(Cli));
     cli->line = mstring_alloc();
+    cli->prev_line = mstring_alloc();
     cli->context = NULL;
     cli->write_cb = NULL;
     cli->flush_cb = NULL;
@@ -83,6 +85,16 @@ void cli_write_eol(Cli* cli) {
     cli_write_str(cli, "\r\n");
 }
 
+void cli_printf(Cli* cli, char* format, ...) {
+    mstring_t* str = mstring_alloc();
+    va_list args;
+    va_start(args, format);
+    mstring_vprintf(str, format, args);
+    va_end(args);
+    cli_write_str(cli, mstring_get_cstr(str));
+    mstring_free(str);
+}
+
 static void cli_write_motd(Cli* cli) {
     cli_write_str(cli, "Hello!\r\nThis is MOTD\r\n");
 }
@@ -109,6 +121,7 @@ static bool cli_handle_enter(Cli* cli) {
     bool result = false;
     const CliItem* item = NULL;
 
+    mstring_set(cli->prev_line, mstring_get_cstr(cli->line));
     mstring_strim(cli->line, "  \n\r\t");
 
     size_t ws = mstring_search_char(cli->line, ' ', 0);

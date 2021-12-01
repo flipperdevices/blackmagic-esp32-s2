@@ -13,6 +13,8 @@ set(SOURCES
     "cli.c"
     "cli-uart.c"
     "cli-commands.c"
+    "cli-command-gpio.c"
+    "cli-args.c"
 )
 
 set(INCLUDES 

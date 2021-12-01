@@ -34,3 +34,5 @@ void cli_write_char(Cli* cli, uint8_t c);
 void cli_handle_char(Cli* cli, uint8_t c);
 
 void cli_write_eol(Cli* cli);
+
+void cli_printf(Cli* cli, char* format, ...);

@@ -43,6 +43,10 @@ int mstring_printf(mstring_t* mstr, const char format[], ...) {
     return ret;
 }
 
+int mstring_vprintf(mstring_t* mstr, const char format[], va_list args) {
+    return string_vprintf(mstr->str, format, args);
+}
+
 const char* mstring_get_cstr(const mstring_t* mstr) {
     return string_get_cstr(mstr->str);
 }
@@ -77,4 +81,8 @@ void mstring_set_strn(mstring_t* mstr, const char str[], size_t n) {
 
 void mstring_push_back(mstring_t* mstr, char c) {
     string_push_back(mstr->str, c);
+}
+
+void mstring_right(mstring_t* mstr, size_t index) {
+    string_right(mstr->str, index);
 }

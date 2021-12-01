@@ -8,6 +8,7 @@
  */
 #pragma once
 #include <stdlib.h>
+#include <stdarg.h>
 
 typedef struct mstring_t mstring_t;
 
@@ -61,6 +62,15 @@ void mstring_cat(mstring_t* mstr, const char* text);
  * @return int 
  */
 int mstring_printf(mstring_t* mstr, const char format[], ...);
+
+/**
+ * 
+ * @param mstr 
+ * @param format 
+ * @param args 
+ * @return int 
+ */
+int mstring_vprintf(mstring_t* mstr, const char format[], va_list args);
 
 /**
  * Get constant pointer to string value
@@ -122,3 +132,5 @@ void mstring_set_n(mstring_t* mstr, const mstring_t* mstr_ref, size_t offset, si
 void mstring_set_strn(mstring_t* mstr, const char str[], size_t n);
 
 void mstring_push_back(mstring_t* mstr, char c);
+
+void mstring_right(mstring_t* mstr, size_t index);
