@@ -88,7 +88,7 @@ static void cli_write_motd(Cli* cli) {
 }
 
 static void cli_write_prompt(Cli* cli) {
-    cli_write_str(cli, "[esp]>");
+    cli_write_str(cli, ":>");
 }
 
 static const CliItem* cli_search_item(Cli* cli, const mstring_t* command) {
