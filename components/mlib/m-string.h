@@ -11,6 +11,8 @@
 
 typedef struct mstring_t mstring_t;
 
+#define STRING_FAILURE ((size_t)-1)
+
 /**
  * Allocate string
  * @return mstring_t* 
@@ -72,7 +74,7 @@ const char* mstring_get_cstr(const mstring_t* mstr);
  * @param mstr 
  * @return size_t 
  */
-size_t mstring_length(const mstring_t* mstr);
+size_t mstring_size(const mstring_t* mstr);
 
 /**
  * Get char at index
@@ -81,3 +83,42 @@ size_t mstring_length(const mstring_t* mstr);
  * @return char 
  */
 char mstring_get_char(const mstring_t* mstr, size_t index);
+
+/**
+ * Compare the string to the C string
+ * @param mstr 
+ * @param cstr 
+ * @return int 
+ */
+int mstring_cmp_cstr(const mstring_t* mstr, const char* cstr);
+
+/**
+ * Remove any characters from c_array that are present in the begining of the string and the end of the string
+ * @param mstr 
+ * @param charac 
+ */
+void mstring_strim(mstring_t* mstr, const char c_array[]);
+
+/**
+ * Search for the position of the character c
+ * from the position 'start' (include)  in the string 
+ * Return STRING_FAILURE if not found.
+ * @param mstr 
+ * @param c 
+ * @param start 
+ * @return size_t 
+ */
+size_t mstring_search_char(mstring_t* mstr, char c, size_t start);
+
+/**
+ * Set the string to the n first characters of other one
+ * @param mstr 
+ * @param mstr_ref 
+ * @param offset 
+ * @param length 
+ */
+void mstring_set_n(mstring_t* mstr, const mstring_t* mstr_ref, size_t offset, size_t length);
+
+void mstring_set_strn(mstring_t* mstr, const char str[], size_t n);
+
+void mstring_push_back(mstring_t* mstr, char c);
