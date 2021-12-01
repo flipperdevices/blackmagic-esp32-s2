@@ -88,7 +88,7 @@ static void cli_write_motd(Cli* cli) {
 }
 
 static void cli_write_prompt(Cli* cli) {
-    cli_write_str(cli, ":>");
+    cli_write_str(cli, ">: ");
 }
 
 static const CliItem* cli_search_item(Cli* cli, const mstring_t* command) {
@@ -150,10 +150,14 @@ void cli_handle_char(Cli* cli, uint8_t c) {
 
     switch(c) {
     case CliSymbolAsciiCR:
-        cli_write_eol(cli);
-        cli_handle_enter(cli);
-        cli_reset(cli);
-        cli_write_eol(cli);
+        if(mstring_size(cli->line) == 0) {
+            cli_write_eol(cli);
+        } else {
+            cli_write_eol(cli);
+            cli_handle_enter(cli);
+            cli_reset(cli);
+            cli_write_eol(cli);
+        }
         cli_write_prompt(cli);
         break;
     case CliSymbolAsciiDel:
