@@ -57,6 +57,7 @@ execute_process(
 # Build date
 string(TIMESTAMP FW_BUILD_DATE "%d-%m-%Y")
 
+message(STATUS "IDF version: ${IDF_VER}")
 message(STATUS "FW date: ${FW_BUILD_DATE}")
 message(STATUS "FW commit: ${FW_GIT_COMMIT}")
 message(STATUS "FW branch: ${FW_GIT_BRANCH}")
