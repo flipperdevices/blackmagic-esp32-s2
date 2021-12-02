@@ -71,7 +71,7 @@ jobs:
         working-directory: components/svelte-portal
 
       - name: Build firmware
-        uses: espressif/esp-idf-ci-action@rust-latest
+        uses: Intake-Health/esp-idf-ci-action@release-v4.4
 
       - name: Fix ownership
         uses: peter-murray/reset-workspace-ownership-action@v1
