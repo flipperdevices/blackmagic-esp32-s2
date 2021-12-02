@@ -84,7 +84,7 @@ void cli_wifi_scan(Cli* cli, mstring_t* args) {
     for(int i = 0; (i < WIFI_SCAN_SIZE) && (i < ap_count); i++) {
         cli_printf(cli, "\"%s\" ", ap_info[i].ssid);
         cli_printf(cli, "%dch ", ap_info[i].primary);
-        cli_printf(cli, "%idb ", ap_info[i].rssi);
+        cli_printf(cli, "%idBm ", ap_info[i].rssi);
         cli_printf(cli, "%s ", get_auth_mode(ap_info[i].authmode));
         if(ap_info[i].authmode != WIFI_AUTH_WEP) {
             cli_printf(cli, "%s ", get_pairwise_cipher(ap_info[i].pairwise_cipher));

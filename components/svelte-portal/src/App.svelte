@@ -230,7 +230,7 @@
         <div>
           <ButtonInline
             style="normal"
-            value="[{net.ssid} {net.channel}ch {net.rssi}db {net.auth}]"
+            value="[{net.ssid} {net.channel}ch {net.rssi}dBm {net.auth}]"
             on:click={() => {
               popup_select_net.close();
               ssid_input.set_value(net.ssid);
