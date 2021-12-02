@@ -14,6 +14,7 @@ set(SOURCES
     "cli-uart.c"
     "cli-commands.c"
     "cli-commands-gpio.c"
+    "cli-commands-wifi.c"
     "cli-commands-device-info.c"
     "cli-args.c"
 )

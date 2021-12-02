@@ -9,6 +9,7 @@ void cli_help(Cli* cli, mstring_t* args);
 void cli_gpio_set(Cli* cli, mstring_t* args);
 void cli_gpio_get(Cli* cli, mstring_t* args);
 void cli_device_info(Cli* cli, mstring_t* args);
+void cli_wifi_scan(Cli* cli, mstring_t* args);
 
 const CliItem cli_items[] = {
     {
@@ -30,6 +31,10 @@ const CliItem cli_items[] = {
     {
         .name = "gpio_get",
         .callback = cli_gpio_get,
+    },
+    {
+        .name = "wifi_scan",
+        .callback = cli_wifi_scan,
     },
     {
         .name = "device_info",
