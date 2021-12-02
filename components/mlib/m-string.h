@@ -134,3 +134,5 @@ void mstring_set_strn(mstring_t* mstr, const char str[], size_t n);
 void mstring_push_back(mstring_t* mstr, char c);
 
 void mstring_right(mstring_t* mstr, size_t index);
+
+size_t mstring_count_char(mstring_t* mstr, char c);

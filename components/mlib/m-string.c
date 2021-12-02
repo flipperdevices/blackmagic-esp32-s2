@@ -86,3 +86,14 @@ void mstring_push_back(mstring_t* mstr, char c) {
 void mstring_right(mstring_t* mstr, size_t index) {
     string_right(mstr->str, index);
 }
+
+size_t mstring_count_char(mstring_t* mstr, char c) {
+    const char* str = string_get_cstr(mstr->str);
+    size_t count = 0;
+
+    for(size_t i = 0; i < string_size(mstr->str); i++) {
+        if(str[i] == c) count++;
+    }
+
+    return count;
+}

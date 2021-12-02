@@ -13,8 +13,8 @@ set(SOURCES
     "cli.c"
     "cli-uart.c"
     "cli-commands.c"
-    "cli-command-gpio.c"
-    "cli-command-device-info.c"
+    "cli-commands-gpio.c"
+    "cli-commands-device-info.c"
     "cli-args.c"
 )
 
@@ -62,8 +62,8 @@ message(STATUS "FW branch: ${FW_GIT_BRANCH}")
 message(STATUS "FW branch num: ${FW_GIT_BRANCH_NUM}")
 message(STATUS "FW version: ${FW_GIT_VERSION}")
 
-set_property(SOURCE "cli-command-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_BUILD_DATE="${FW_BUILD_DATE}")
-set_property(SOURCE "cli-command-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_GIT_COMMIT="${FW_GIT_COMMIT}")
-set_property(SOURCE "cli-command-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_GIT_BRANCH="${FW_GIT_BRANCH}")
-set_property(SOURCE "cli-command-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_GIT_BRANCH_NUM="${FW_GIT_BRANCH_NUM}")
-set_property(SOURCE "cli-command-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_GIT_VERSION="${FW_GIT_VERSION}")
+set_property(SOURCE "cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_BUILD_DATE="${FW_BUILD_DATE}")
+set_property(SOURCE "cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_GIT_COMMIT="${FW_GIT_COMMIT}")
+set_property(SOURCE "cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_GIT_BRANCH="${FW_GIT_BRANCH}")
+set_property(SOURCE "cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_GIT_BRANCH_NUM="${FW_GIT_BRANCH_NUM}")
+set_property(SOURCE "cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_GIT_VERSION="${FW_GIT_VERSION}")
