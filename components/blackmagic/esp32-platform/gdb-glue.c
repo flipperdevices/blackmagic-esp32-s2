@@ -52,6 +52,10 @@ size_t gdb_glue_get_packet_size() {
     return GDB_RX_PACKET_MAX_SIZE;
 }
 
+const char* gdb_glue_get_bm_version() {
+    return FIRMWARE_VERSION;
+}
+
 void gdb_glue_init(void) {
     gdb_glue.rx_stream = xStreamBufferCreate(GDB_RX_BUFFER_SIZE, 1);
     gdb_glue.rx_stream_full = false;

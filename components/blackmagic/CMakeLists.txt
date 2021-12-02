@@ -69,13 +69,13 @@ set(BM_INCLUDE
 # Get the current working branch
 execute_process(
     COMMAND git describe --always --dirty --tags
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_DESC
+    WORKING_DIRECTORY ${COMPONENT_DIR}/blackmagic-fw
+    OUTPUT_VARIABLE BM_GIT_DESC
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-message(STATUS "FW Version: ${GIT_DESC}")
+message(STATUS "BM Version: ${BM_GIT_DESC}")
 
 idf_component_register(SRCS ${BM_SOURCES} ${BM_TARGETS}  
                     INCLUDE_DIRS ${BM_INCLUDE})
 
-target_compile_options(${COMPONENT_LIB} PRIVATE -DPC_HOSTED=0 -DFIRMWARE_VERSION="${GIT_DESC}" -Wno-char-subscripts -Wno-attributes)
+target_compile_options(${COMPONENT_LIB} PRIVATE -DPC_HOSTED=0 -DFIRMWARE_VERSION="${BM_GIT_DESC}" -Wno-char-subscripts -Wno-attributes)

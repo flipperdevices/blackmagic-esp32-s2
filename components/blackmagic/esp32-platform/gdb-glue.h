@@ -31,3 +31,9 @@ bool gdb_glue_can_receive();
  * @return size_t 
  */
 size_t gdb_glue_get_packet_size();
+
+/**
+ * Get blackmagic version
+ * @return const char* 
+ */
+const char* gdb_glue_get_bm_version();
