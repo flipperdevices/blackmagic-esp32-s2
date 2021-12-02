@@ -23,17 +23,17 @@ static const char* get_auth_mode(int authmode) {
     case WIFI_AUTH_WEP:
         return "WEP";
     case WIFI_AUTH_WPA_PSK:
-        return "WPA PSK";
+        return "WPA_PSK";
     case WIFI_AUTH_WPA2_PSK:
-        return "WPA2 PSK";
+        return "WPA2_PSK";
     case WIFI_AUTH_WPA_WPA2_PSK:
-        return "WPA WPA2 PSK";
+        return "WPA_WPA2_PSK";
     case WIFI_AUTH_WPA2_ENTERPRISE:
-        return "WPA2 ENTERPRISE";
+        return "WPA2_ENTERPRISE";
     case WIFI_AUTH_WPA3_PSK:
-        return "WPA3 PSK";
+        return "WPA3_PSK";
     case WIFI_AUTH_WPA2_WPA3_PSK:
-        return "WPA2 WPA3 PSK";
+        return "WPA2_WPA3_PSK";
     default:
         return "UNKNOWN";
     }
