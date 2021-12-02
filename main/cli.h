@@ -8,6 +8,8 @@
  */
 
 #pragma once
+#include "stdint.h"
+#include "stdlib.h"
 
 typedef struct Cli Cli;
 typedef struct CliItem CliItem;

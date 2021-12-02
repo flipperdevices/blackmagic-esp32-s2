@@ -8,3 +8,5 @@
  */
 
 #define COUNT_OF(x) (sizeof(x) / sizeof((x)[0]))
+#define STRINGIFY_HELPER(X) #X
+#define STRINGIFY(X) STRINGIFY_HELPER(X)

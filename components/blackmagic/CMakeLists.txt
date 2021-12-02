@@ -73,7 +73,7 @@ execute_process(
     OUTPUT_VARIABLE BM_GIT_DESC
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-message(STATUS "BM Version: ${BM_GIT_DESC}")
+message(STATUS "BM version: ${BM_GIT_DESC}")
 
 idf_component_register(SRCS ${BM_SOURCES} ${BM_TARGETS}  
                     INCLUDE_DIRS ${BM_INCLUDE})
