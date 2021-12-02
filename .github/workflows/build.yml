@@ -90,6 +90,7 @@ jobs:
           mv build/bootloader/bootloader.bin artifacts/
           mv build/partition_table/partition-table.bin artifacts/
           mv build/blackmagic.bin artifacts/
+          cp scripts/flash_nix.sh artifacts/
 
       - name: Generate flash.command file
         if: ${{ !github.event.pull_request.head.repo.fork }}
