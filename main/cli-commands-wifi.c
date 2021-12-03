@@ -71,6 +71,7 @@ static const char* get_group_cipher(int group_cipher) {
 void cli_wifi_scan(Cli* cli, mstring_t* args) {
     cli_write_str(cli, "Scanning...");
     cli_write_eol(cli);
+    cli_flush(cli);
 
     uint16_t number = WIFI_SCAN_SIZE;
     wifi_ap_record_t* ap_info = calloc(WIFI_SCAN_SIZE, sizeof(wifi_ap_record_t));

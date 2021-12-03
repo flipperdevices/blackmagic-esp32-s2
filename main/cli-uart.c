@@ -70,8 +70,8 @@ void cli_uart_init() {
 
     ESP_ERROR_CHECK(uart_driver_install(
         CLI_UART_PORT_NUM,
-        CLI_UART_BUF_SIZE * 2,
-        CLI_UART_BUF_SIZE * 2,
+        CLI_UART_BUF_SIZE * 4,
+        0,
         10,
         &cli_uart_queue,
         intr_alloc_flags));
