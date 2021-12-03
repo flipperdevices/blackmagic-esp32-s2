@@ -212,6 +212,9 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
     case CHIP_ESP32C3:
         cJSON_AddStringToObject(root, "model", "ESP32-C3");
         break;
+    default:
+        cJSON_AddStringToObject(root, "model", "UNKNOWN");
+        break;
     }
     cJSON_AddNumberToObject(root, "revision", chip_info.revision);
     cJSON_AddNumberToObject(root, "cores", chip_info.cores);
