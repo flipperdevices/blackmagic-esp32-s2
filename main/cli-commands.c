@@ -1,14 +1,16 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "cli.h"
+#include "nvs.h"
+#include "helpers.h"
 #include "cli-args.h"
 #include "cli-commands.h"
-#include "helpers.h"
 
 void cli_help(Cli* cli, mstring_t* args);
 void cli_gpio_set(Cli* cli, mstring_t* args);
 void cli_gpio_get(Cli* cli, mstring_t* args);
 void cli_device_info(Cli* cli, mstring_t* args);
+void cli_factory_reset(Cli* cli, mstring_t* args);
 void cli_wifi_scan(Cli* cli, mstring_t* args);
 
 const CliItem cli_items[] = {
@@ -40,6 +42,10 @@ const CliItem cli_items[] = {
         .name = "device_info",
         .callback = cli_device_info,
     },
+    {
+        .name = "factory_reset",
+        .callback = cli_factory_reset,
+    },
 };
 
 size_t cli_items_count = COUNT_OF(cli_items);
@@ -52,4 +58,11 @@ void cli_help(Cli* cli, mstring_t* args) {
             cli_write_eol(cli);
         }
     }
+}
+
+void cli_factory_reset(Cli* cli, mstring_t* args) {
+    cli_write_str(cli, "Erasing NVS");
+    cli_write_eol(cli);
+    nvs_erase();
+    cli_write_str(cli, "OK");
 }

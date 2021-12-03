@@ -6,15 +6,37 @@
 #define NVS_STORE "nvs_storage"
 
 void nvs_init(void) {
-    ESP_LOGI(TAG, "init");
-    esp_err_t ret = nvs_flash_init();
+    ESP_LOGI(TAG, "init " NVS_DEFAULT_PART_NAME);
+    esp_err_t ret = nvs_flash_init_partition(NVS_DEFAULT_PART_NAME);
     if(ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_LOGI(TAG, "erasing");
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ret = nvs_flash_init();
+        ESP_LOGI(TAG, "erasing " NVS_DEFAULT_PART_NAME);
+        ESP_ERROR_CHECK(nvs_flash_erase_partition(NVS_DEFAULT_PART_NAME));
+        ret = nvs_flash_init_partition(NVS_DEFAULT_PART_NAME);
     }
     ESP_ERROR_CHECK(ret);
+
+    ESP_LOGI(TAG, "init " NVS_STORE);
+    ret = nvs_flash_init_partition(NVS_STORE);
+    if(ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_LOGI(TAG, "erasing " NVS_STORE);
+        ESP_ERROR_CHECK(nvs_flash_erase_partition(NVS_STORE));
+        ret = nvs_flash_init_partition(NVS_STORE);
+    }
+    ESP_ERROR_CHECK(ret);
+
     ESP_LOGI(TAG, "init done");
+}
+
+void nvs_erase(void) {
+    ESP_LOGI(TAG, "erasing " NVS_DEFAULT_PART_NAME);
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    ESP_ERROR_CHECK(nvs_flash_init());
+
+    ESP_LOGI(TAG, "erasing " NVS_STORE);
+    ESP_ERROR_CHECK(nvs_flash_erase_partition(NVS_STORE));
+    ESP_ERROR_CHECK(nvs_flash_init_partition(NVS_STORE));
+
+    ESP_LOGI(TAG, "erasing done");
 }
 
 esp_err_t nvs_save_string(const char* key, const mstring_t* value) {
