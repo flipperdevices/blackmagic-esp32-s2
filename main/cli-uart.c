@@ -10,10 +10,15 @@
 #define CLI_UART_CTS_PIN (UART_PIN_NO_CHANGE)
 #define CLI_UART_BAUD_RATE (115200)
 #define CLI_UART_BUF_SIZE (128)
+#define CLI_UART_RX_BUF_SIZE (64)
 
 static Cli* cli_uart;
 static QueueHandle_t cli_uart_queue;
+static uint8_t cli_rx_buffer[CLI_UART_RX_BUF_SIZE];
+static size_t cli_rx_index = 0;
+
 static void cli_uart_write(const uint8_t* data, size_t data_size, void* context);
+static void cli_uart_flush(void* context);
 
 static void cli_uart_rx_task(void* pvParameters) {
     uart_event_t event;
@@ -47,6 +52,7 @@ static void cli_uart_rx_task(void* pvParameters) {
 void cli_uart_init() {
     cli_uart = cli_init();
     cli_set_write_cb(cli_uart, cli_uart_write);
+    cli_set_flush_cb(cli_uart, cli_uart_flush);
 
     uart_config_t uart_config = {
         .baud_rate = CLI_UART_BAUD_RATE,
@@ -77,5 +83,20 @@ void cli_uart_init() {
 }
 
 static void cli_uart_write(const uint8_t* data, size_t data_size, void* context) {
-    uart_write_bytes(CLI_UART_PORT_NUM, data, data_size);
+    for(size_t i = 0; i < data_size; i++) {
+        cli_rx_buffer[cli_rx_index] = data[i];
+        cli_rx_index++;
+
+        if(cli_rx_index == CLI_UART_RX_BUF_SIZE) {
+            cli_uart_flush(NULL);
+        }
+    }
+}
+
+static void cli_uart_flush(void* context) {
+    if(cli_rx_index > 0) {
+        uart_write_bytes(CLI_UART_PORT_NUM, cli_rx_buffer, cli_rx_index);
+    }
+
+    cli_rx_index = 0;
 }

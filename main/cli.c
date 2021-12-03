@@ -60,14 +60,12 @@ void cli_set_flush_cb(Cli* cli, CliFlush flush_cb) {
 }
 
 void cli_write(Cli* cli, const uint8_t* data, size_t data_size) {
-    ESP_LOGI("cli", "write");
     if(cli->write_cb != NULL) {
         cli->write_cb(data, data_size, cli->context);
     }
 }
 
 void cli_flush(Cli* cli) {
-    ESP_LOGI("cli", "flush");
     if(cli->flush_cb != NULL) {
         cli->flush_cb(cli->context);
     }
@@ -149,7 +147,6 @@ static void cli_handle_backspace(Cli* cli) {
     if(mstring_size(cli->line) > 0) {
         // Other side
         cli_write_str(cli, "\e[D\e[1P");
-        cli_flush(cli);
         // Our side
         mstring_set_strn(cli->line, mstring_get_cstr(cli->line), mstring_size(cli->line) - 1);
         cli->cursor_position--;
@@ -159,8 +156,6 @@ static void cli_handle_backspace(Cli* cli) {
 }
 
 void cli_handle_char(Cli* cli, uint8_t c) {
-    ESP_LOGI("cli", "%c", c);
-
     switch(c) {
     case CliSymbolAsciiCR:
         if(mstring_size(cli->line) == 0) {
@@ -200,10 +195,11 @@ void cli_handle_char(Cli* cli, uint8_t c) {
             cli_write_str(cli, "\e[4h");
             cli_write_char(cli, c);
             cli_write_str(cli, "\e[4l");
-            cli_flush(cli);
         }
         break;
     default:
         break;
     }
+
+    cli_flush(cli);
 }
