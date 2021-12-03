@@ -220,7 +220,7 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
     cJSON_AddNumberToObject(root, "cores", chip_info.cores);
 
     multi_heap_info_t info;
-    heap_caps_get_info(&info, MALLOC_CAP_8BIT);
+    heap_caps_get_info(&info, MALLOC_CAP_DEFAULT);
     cJSON* heap = cJSON_AddObjectToObject(root, "heap");
     cJSON_AddNumberToObject(heap, "total_free_bytes", info.total_free_bytes);
     cJSON_AddNumberToObject(heap, "total_allocated_bytes", info.total_allocated_bytes);
