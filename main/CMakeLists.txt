@@ -2,6 +2,7 @@ set(SOURCES
     "main.c"
     "usb-cdc.c"
     "nvs.c"
+    "nvs-config.c"
     "led.c"
     "cli-uart.c"
     "i2c.c"
@@ -15,6 +16,7 @@ set(SOURCES
     "cli-commands.c"
     "cli-commands-gpio.c"
     "cli-commands-wifi.c"
+    "cli-commands-config.c"
     "cli-commands-device-info.c"
     "cli-args.c"
 )

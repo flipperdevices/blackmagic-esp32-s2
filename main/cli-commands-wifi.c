@@ -97,3 +97,37 @@ void cli_wifi_scan(Cli* cli, mstring_t* args) {
     cli_write_str(cli, "OK");
     free(ap_info);
 }
+
+void cli_wifi_ap_clients(Cli* cli, mstring_t* args) {
+    wifi_sta_list_t* wifi_sta_list = malloc(sizeof(wifi_sta_list_t));
+    esp_err_t err = esp_wifi_ap_get_sta_list(wifi_sta_list);
+
+    if(err == ESP_OK) {
+        for(size_t i = 0; i < wifi_sta_list->num; i++) {
+            cli_printf(
+                cli,
+                "%02x:%02x:%02x:%02x:%02x:%02x ",
+                wifi_sta_list->sta[i].mac[0],
+                wifi_sta_list->sta[i].mac[1],
+                wifi_sta_list->sta[i].mac[2],
+                wifi_sta_list->sta[i].mac[3],
+                wifi_sta_list->sta[i].mac[4],
+                wifi_sta_list->sta[i].mac[5]);
+            cli_printf(cli, "%idBm ", wifi_sta_list->sta[i].rssi);
+
+            if(wifi_sta_list->sta[i].phy_11b) cli_write_str(cli, "b");
+            if(wifi_sta_list->sta[i].phy_11g) cli_write_str(cli, "g");
+            if(wifi_sta_list->sta[i].phy_11n) cli_write_str(cli, "n");
+            if(wifi_sta_list->sta[i].phy_lr) cli_write_str(cli, "lr");
+            if(wifi_sta_list->sta[i].is_mesh_child) cli_write_str(cli, "m");
+
+            cli_write_eol(cli);
+        }
+
+        cli_write_str(cli, "OK");
+    } else {
+        cli_write_str(cli, "FAIL");
+    }
+
+    free(wifi_sta_list);
+}
