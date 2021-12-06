@@ -131,3 +131,33 @@ void cli_wifi_ap_clients(Cli* cli, mstring_t* args) {
 
     free(wifi_sta_list);
 }
+
+void cli_wifi_sta_info(Cli* cli, mstring_t* args) {
+    wifi_ap_record_t* ap_info = malloc(sizeof(wifi_ap_record_t));
+    esp_err_t err = esp_wifi_sta_get_ap_info(ap_info);
+
+    if(err == ESP_OK) {
+        cli_printf(
+            cli,
+            "%02x:%02x:%02x:%02x:%02x:%02x ",
+            ap_info->bssid[0],
+            ap_info->bssid[1],
+            ap_info->bssid[2],
+            ap_info->bssid[3],
+            ap_info->bssid[4],
+            ap_info->bssid[5]);
+        cli_printf(cli, "%dch ", ap_info->primary);
+        cli_printf(cli, "%idBm ", ap_info->rssi);
+        if(ap_info->phy_11b) cli_write_str(cli, "b");
+        if(ap_info->phy_11g) cli_write_str(cli, "g");
+        if(ap_info->phy_11n) cli_write_str(cli, "n");
+        if(ap_info->phy_lr) cli_write_str(cli, "lr");
+        cli_write_eol(cli);
+
+        cli_write_str(cli, "OK");
+    } else {
+        cli_write_str(cli, "FAIL");
+    }
+
+    free(ap_info);
+}
