@@ -8,26 +8,19 @@
  */
 #pragma once
 #include <stdbool.h>
-
-#define ESP_WIFI_MODE_STA "STA"
-#define ESP_WIFI_MODE_AP "AP"
-
-typedef enum {
-    WIFIModeSTA,
-    WIFIModeAP,
-} WIFIMode;
+#include "nvs-config.h"
 
 /**
  * Init network module
- * @return WIFIMode
+ * @return WiFiMode
  */
-WIFIMode network_init(void);
+WiFiMode network_init(void);
 
 /**
  * Returns current WIFI mode
- * @return WIFIMode 
+ * @return WiFiMode 
  */
-WIFIMode network_get_mode(void);
+WiFiMode network_get_mode(void);
 
 /**
  * Get current IP address
