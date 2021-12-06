@@ -25,6 +25,7 @@ struct Cli {
     mstring_t* line;
     mstring_t* prev_line;
     size_t cursor_position;
+    bool esc_mode;
 
     void* context;
     CliWrite write_cb;
@@ -38,6 +39,7 @@ Cli* cli_init(void) {
     cli->context = NULL;
     cli->write_cb = NULL;
     cli->flush_cb = NULL;
+    cli->esc_mode = false;
 
     return cli;
 }
@@ -156,49 +158,73 @@ static void cli_handle_backspace(Cli* cli) {
 }
 
 void cli_handle_char(Cli* cli, uint8_t c) {
-    switch(c) {
-    case CliSymbolAsciiCR:
-        if(mstring_size(cli->line) == 0) {
+    if(cli->esc_mode) {
+        switch(c) {
+        case '[':
+            cli->esc_mode = true;
+            break;
+        case 'A':
+            if(mstring_size(cli->line) == 0 && mstring_cmp(cli->line, cli->prev_line) != 0) {
+                // Set line buffer and cursor position
+                mstring_set(cli->line, mstring_get_cstr(cli->prev_line));
+                cli->cursor_position = mstring_size(cli->line);
+                // Show new line to user
+                cli_write_str(cli, mstring_get_cstr(cli->line));
+            }
+            cli->esc_mode = false;
+            break;
+        default:
+            cli->esc_mode = false;
+            break;
+        }
+    } else {
+        switch(c) {
+        case CliSymbolAsciiEsc:
+            cli->esc_mode = true;
+            break;
+        case CliSymbolAsciiCR:
+            if(mstring_size(cli->line) == 0) {
+                cli_write_eol(cli);
+            } else {
+                cli_write_eol(cli);
+                cli_handle_enter(cli);
+                cli_reset(cli);
+                cli_write_eol(cli);
+            }
+            cli_write_prompt(cli);
+            break;
+        case CliSymbolAsciiDel:
+        case CliSymbolAsciiBackspace:
+            cli_handle_backspace(cli);
+            break;
+        case CliSymbolAsciiSOH:
+            delay(33);
+            cli_write_motd(cli);
             cli_write_eol(cli);
-        } else {
-            cli_write_eol(cli);
-            cli_handle_enter(cli);
+            cli_write_prompt(cli);
+            break;
+        case CliSymbolAsciiETX:
             cli_reset(cli);
             cli_write_eol(cli);
+            cli_write_prompt(cli);
+            break;
+        case CliSymbolAsciiEOT:
+            cli_reset(cli);
+            break;
+        case ' ' ... '~':
+            if(cli->cursor_position == mstring_size(cli->line)) {
+                mstring_push_back(cli->line, c);
+                cli_write_char(cli, c);
+            } else {
+                mstring_push_back(cli->line, c);
+                cli_write_str(cli, "\e[4h");
+                cli_write_char(cli, c);
+                cli_write_str(cli, "\e[4l");
+            }
+            break;
+        default:
+            break;
         }
-        cli_write_prompt(cli);
-        break;
-    case CliSymbolAsciiDel:
-    case CliSymbolAsciiBackspace:
-        cli_handle_backspace(cli);
-        break;
-    case CliSymbolAsciiSOH:
-        delay(33);
-        cli_write_motd(cli);
-        cli_write_eol(cli);
-        cli_write_prompt(cli);
-        break;
-    case CliSymbolAsciiETX:
-        cli_reset(cli);
-        cli_write_eol(cli);
-        cli_write_prompt(cli);
-        break;
-    case CliSymbolAsciiEOT:
-        cli_reset(cli);
-        break;
-    case ' ' ... '~':
-        if(cli->cursor_position == mstring_size(cli->line)) {
-            mstring_push_back(cli->line, c);
-            cli_write_char(cli, c);
-        } else {
-            mstring_push_back(cli->line, c);
-            cli_write_str(cli, "\e[4h");
-            cli_write_char(cli, c);
-            cli_write_str(cli, "\e[4l");
-        }
-        break;
-    default:
-        break;
     }
 
     cli_flush(cli);
