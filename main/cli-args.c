@@ -44,18 +44,26 @@ bool cli_args_read_string_and_trim(mstring_t* args, mstring_t* word) {
     return true;
 }
 
+bool cli_args_read_quoted_string_and_trim(mstring_t* args, mstring_t* word) {
+    if(mstring_size(args) < 2 || mstring_get_char(args, 0) != '\"') {
+        return false;
+    }
+
+    size_t second_quote_pos = mstring_search_char(args, '\"', 1);
+
+    if(second_quote_pos == 0) {
+        return false;
+    }
+
+    mstring_set_n(word, args, 1, second_quote_pos - 1);
+    mstring_right(args, second_quote_pos + 1);
+    mstring_strim(args, "  \r\n\t");
+    return true;
+}
+
 bool cli_args_read_probably_quoted_string_and_trim(mstring_t* args, mstring_t* word) {
     if(mstring_size(args) > 1 && mstring_get_char(args, 0) == '\"') {
-        size_t second_quote_pos = mstring_search_char(args, '\"', 1);
-
-        if(second_quote_pos == 0) {
-            return false;
-        }
-
-        mstring_set_n(word, args, 1, second_quote_pos - 1);
-        mstring_right(args, second_quote_pos + 1);
-        mstring_strim(args, "  \r\n\t");
-        return true;
+        return cli_args_read_quoted_string_and_trim(args, word);
     } else {
         return cli_args_read_string_and_trim(args, word);
     }
