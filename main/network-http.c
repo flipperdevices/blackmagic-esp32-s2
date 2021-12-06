@@ -7,6 +7,7 @@
 #include <esp_system.h>
 #include "network.h"
 #include "nvs.h"
+#include "nvs-config.h"
 #include "led.h"
 #include "helpers.h"
 
@@ -77,29 +78,69 @@ static const char* get_group_cipher(int group_cipher) {
     }
 }
 
+typedef struct {
+    const char* uri;
+    const char* type;
+    const uint8_t* addr_start;
+    const uint8_t* addr_end;
+} HttpResource;
+
+const HttpResource http_resources[] = {
+    {
+        .uri = "/",
+        .type = "text/html",
+        .addr_start = index_html_start,
+        .addr_end = index_html_end,
+    },
+    {
+        .uri = "/index.html",
+        .type = "text/html",
+        .addr_start = index_html_start,
+        .addr_end = index_html_end,
+    },
+    {
+        .uri = "/build/bundle.css",
+        .type = "text/css",
+        .addr_start = build_bundle_css_start,
+        .addr_end = build_bundle_css_end,
+    },
+    {
+        .uri = "/build/bundle.js",
+        .type = "application/javascript",
+        .addr_start = build_bundle_js_start,
+        .addr_end = build_bundle_js_end,
+    },
+    {
+        .uri = "/assets/ega8.otf",
+        .type = "application/x-font-opentype",
+        .addr_start = assets_ega8_otf_start,
+        .addr_end = assets_ega8_otf_end,
+    },
+    {
+        .uri = "/assets/favicon.ico",
+        .type = "image/x-icon",
+        .addr_start = assets_favicon_ico_start,
+        .addr_end = assets_favicon_ico_end,
+    },
+    {
+        .uri = "/favicon.ico",
+        .type = "image/x-icon",
+        .addr_start = assets_favicon_ico_start,
+        .addr_end = assets_favicon_ico_end,
+    },
+};
+
 static esp_err_t http_common_get_handler(httpd_req_t* req) {
     const uint8_t* file_start = NULL;
     const uint8_t* file_end = NULL;
-    if(strcmp("/", req->uri) == 0 || strcmp("/index.html", req->uri) == 0) {
-        file_start = index_html_start;
-        file_end = index_html_end;
-        httpd_resp_set_type(req, "text/html");
-    } else if(strcmp("/build/bundle.css", req->uri) == 0) {
-        file_start = build_bundle_css_start;
-        file_end = build_bundle_css_end;
-        httpd_resp_set_type(req, "text/css");
-    } else if(strcmp("/build/bundle.js", req->uri) == 0) {
-        file_start = build_bundle_js_start;
-        file_end = build_bundle_js_end;
-        httpd_resp_set_type(req, "application/javascript");
-    } else if(strcmp("/assets/ega8.otf", req->uri) == 0) {
-        file_start = assets_ega8_otf_start;
-        file_end = assets_ega8_otf_end;
-        httpd_resp_set_type(req, "application/x-font-opentype");
-    } else if(strcmp("/assets/favicon.ico", req->uri) == 0 || strcmp("/favicon.ico", req->uri) == 0) {
-        file_start = assets_favicon_ico_start;
-        file_end = assets_favicon_ico_end;
-        httpd_resp_set_type(req, "image/x-icon");
+
+    for(size_t i = 0; i < COUNT_OF(http_resources); i++) {
+        if(strcmp(http_resources[i].uri, req->uri) == 0) {
+            file_start = http_resources[i].addr_start;
+            file_end = http_resources[i].addr_end;
+            httpd_resp_set_type(req, http_resources[i].type);
+            break;
+        }
     }
 
     if(file_start == NULL) {
@@ -249,27 +290,6 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
     return ESP_OK;
 }
 
-static esp_err_t wifi_mode_get_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_type(req, "application/json");
-    cJSON* root = cJSON_CreateObject();
-
-    switch(network_get_mode()) {
-    case WIFIModeSTA:
-        cJSON_AddStringToObject(root, "mode", "STA");
-        break;
-    case WIFIModeAP:
-        cJSON_AddStringToObject(root, "mode", "AP");
-        break;
-    }
-
-    const char* json_text = cJSON_Print(root);
-    httpd_resp_sendstr(req, json_text);
-    free((void*)json_text);
-    cJSON_Delete(root);
-    return ESP_OK;
-}
-
 static esp_err_t wifi_get_credenitals_handler(httpd_req_t* req) {
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_set_type(req, "application/json");
@@ -277,23 +297,29 @@ static esp_err_t wifi_get_credenitals_handler(httpd_req_t* req) {
 
     mstring_t* ap_ssid = mstring_alloc();
     mstring_t* ap_pass = mstring_alloc();
-    mstring_t* ap_mode = mstring_alloc();
+    mstring_t* sta_ssid = mstring_alloc();
+    mstring_t* sta_pass = mstring_alloc();
+    WiFiMode wifi_mode;
 
-    if(nvs_load_string("ap_ssid", ap_ssid) != ESP_OK) {
-        mstring_set(ap_ssid, "");
+    nvs_config_get_wifi_mode(&wifi_mode);
+    nvs_config_get_ap_ssid(ap_ssid);
+    nvs_config_get_ap_pass(ap_pass);
+    nvs_config_get_sta_ssid(sta_ssid);
+    nvs_config_get_sta_pass(sta_pass);
+
+    cJSON_AddStringToObject(root, "ap_ssid", mstring_get_cstr(ap_ssid));
+    cJSON_AddStringToObject(root, "ap_pass", mstring_get_cstr(ap_pass));
+    cJSON_AddStringToObject(root, "sta_ssid", mstring_get_cstr(sta_ssid));
+    cJSON_AddStringToObject(root, "sta_pass", mstring_get_cstr(sta_pass));
+
+    switch(wifi_mode) {
+    case WiFiModeAP:
+        cJSON_AddStringToObject(root, "wifi_mode", CFG_WIFI_MODE_AP);
+        break;
+    case WiFiModeSTA:
+        cJSON_AddStringToObject(root, "wifi_mode", CFG_WIFI_MODE_STA);
+        break;
     }
-
-    if(nvs_load_string("ap_pass", ap_pass) != ESP_OK) {
-        mstring_set(ap_pass, "");
-    }
-
-    if(nvs_load_string("ap_mode", ap_mode) != ESP_OK) {
-        mstring_set(ap_mode, "");
-    }
-
-    cJSON_AddStringToObject(root, "ssid", mstring_get_cstr(ap_ssid));
-    cJSON_AddStringToObject(root, "pass", mstring_get_cstr(ap_pass));
-    cJSON_AddStringToObject(root, "mode", mstring_get_cstr(ap_mode));
 
     const char* json_text = cJSON_Print(root);
     httpd_resp_sendstr(req, json_text);
@@ -301,7 +327,8 @@ static esp_err_t wifi_get_credenitals_handler(httpd_req_t* req) {
     cJSON_Delete(root);
     mstring_free(ap_ssid);
     mstring_free(ap_pass);
-
+    mstring_free(sta_ssid);
+    mstring_free(sta_pass);
     return ESP_OK;
 }
 
@@ -312,7 +339,9 @@ static esp_err_t wifi_set_credenitals_handler(httpd_req_t* req) {
     char* buffer = malloc(256);
     mstring_t* ap_ssid = mstring_alloc();
     mstring_t* ap_pass = mstring_alloc();
-    mstring_t* ap_mode = mstring_alloc();
+    mstring_t* sta_ssid = mstring_alloc();
+    mstring_t* sta_pass = mstring_alloc();
+    mstring_t* wifi_mode = mstring_alloc();
     const char* error_text = JSON_ERROR("unknown error");
     int received = 0;
     httpd_resp_set_type(req, "application/json");
@@ -333,57 +362,80 @@ static esp_err_t wifi_set_credenitals_handler(httpd_req_t* req) {
     buffer[total_length] = '\0';
 
     cJSON* root = cJSON_Parse(buffer);
-    if(cJSON_GetObjectItem(root, "ssid") != NULL) {
-        mstring_set(ap_ssid, cJSON_GetObjectItem(root, "ssid")->valuestring);
+    if(cJSON_GetObjectItem(root, "ap_ssid") != NULL) {
+        mstring_set(ap_ssid, cJSON_GetObjectItem(root, "ap_ssid")->valuestring);
     } else {
         cJSON_Delete(root);
-        error_text = JSON_ERROR("request dont have [ssid] field");
+        error_text = JSON_ERROR("request dont have [ap_ssid] field");
         goto err_fail;
     }
 
-    if(cJSON_GetObjectItem(root, "pass") != NULL) {
-        mstring_set(ap_pass, cJSON_GetObjectItem(root, "pass")->valuestring);
+    if(cJSON_GetObjectItem(root, "ap_pass") != NULL) {
+        mstring_set(ap_pass, cJSON_GetObjectItem(root, "ap_pass")->valuestring);
     } else {
         cJSON_Delete(root);
-        error_text = JSON_ERROR("request dont have [pass] field");
+        error_text = JSON_ERROR("request dont have [ap_pass] field");
         goto err_fail;
     }
 
-    if(cJSON_GetObjectItem(root, "mode") != NULL) {
-        mstring_set(ap_mode, cJSON_GetObjectItem(root, "mode")->valuestring);
+    if(cJSON_GetObjectItem(root, "sta_ssid") != NULL) {
+        mstring_set(sta_ssid, cJSON_GetObjectItem(root, "sta_ssid")->valuestring);
     } else {
         cJSON_Delete(root);
-        error_text = JSON_ERROR("request dont have [mode] field");
+        error_text = JSON_ERROR("request dont have [sta_ssid] field");
+        goto err_fail;
+    }
+
+    if(cJSON_GetObjectItem(root, "sta_pass") != NULL) {
+        mstring_set(sta_pass, cJSON_GetObjectItem(root, "sta_pass")->valuestring);
+    } else {
+        cJSON_Delete(root);
+        error_text = JSON_ERROR("request dont have [sta_pass] field");
+        goto err_fail;
+    }
+
+    if(cJSON_GetObjectItem(root, "wifi_mode") != NULL) {
+        mstring_set(wifi_mode, cJSON_GetObjectItem(root, "wifi_mode")->valuestring);
+    } else {
+        cJSON_Delete(root);
+        error_text = JSON_ERROR("request dont have [wifi_mode] field");
         goto err_fail;
     }
     cJSON_Delete(root);
 
-    if(strcmp(mstring_get_cstr(ap_mode), ESP_WIFI_MODE_AP) != 0 &&
-       strcmp(mstring_get_cstr(ap_mode), ESP_WIFI_MODE_STA) != 0) {
-        error_text = JSON_ERROR("invalid value in [mode]");
+    if(strcmp(mstring_get_cstr(wifi_mode), CFG_WIFI_MODE_AP) != 0 &&
+       strcmp(mstring_get_cstr(wifi_mode), CFG_WIFI_MODE_STA) != 0) {
+        error_text = JSON_ERROR("invalid value in [wifi_mode]");
         goto err_fail;
     }
 
-    if(mstring_size(ap_pass) < 8) {
-        error_text = JSON_ERROR("too short value in [pass]");
+    if(nvs_config_set_ap_ssid(ap_ssid) != ESP_OK) {
+        error_text = JSON_ERROR("invalid value in [ap_ssid]");
         goto err_fail;
     }
-    if(mstring_size(ap_ssid) < 1) {
-        error_text = JSON_ERROR("too short value in [ssid]");
+    if(nvs_config_set_ap_pass(ap_pass) != ESP_OK) {
+        error_text = JSON_ERROR("invalid value in [ap_pass]");
+        goto err_fail;
+    }
+    if(nvs_config_set_sta_ssid(sta_ssid) != ESP_OK) {
+        error_text = JSON_ERROR("invalid value in [sta_ssid]");
+        goto err_fail;
+    }
+    if(nvs_config_set_sta_pass(sta_pass) != ESP_OK) {
+        error_text = JSON_ERROR("invalid value in [sta_pass]");
         goto err_fail;
     }
 
-    if(nvs_save_string("ap_ssid", ap_ssid) != ESP_OK) {
-        error_text = JSON_ERROR("cannot save [ap_ssid]");
-        goto err_fail;
-    }
-    if(nvs_save_string("ap_pass", ap_pass) != ESP_OK) {
-        error_text = JSON_ERROR("cannot save [ap_pass]");
-        goto err_fail;
-    }
-    if(nvs_save_string("ap_mode", ap_mode) != ESP_OK) {
-        error_text = JSON_ERROR("cannot save [ap_mode]");
-        goto err_fail;
+    if(strcmp(mstring_get_cstr(wifi_mode), CFG_WIFI_MODE_AP) == 0) {
+        if(nvs_config_set_wifi_mode(WiFiModeAP) != ESP_OK) {
+            error_text = JSON_ERROR("invalid value in [sta_pass]");
+            goto err_fail;
+        }
+    } else {
+        if(nvs_config_set_wifi_mode(WiFiModeSTA) != ESP_OK) {
+            error_text = JSON_ERROR("invalid value in [sta_pass]");
+            goto err_fail;
+        }
     }
 
     httpd_resp_sendstr(req, JSON_RESULT("WIFI settings saved"));
@@ -394,7 +446,9 @@ err_fail:
     free(buffer);
     mstring_free(ap_ssid);
     mstring_free(ap_pass);
-    mstring_free(ap_mode);
+    mstring_free(sta_ssid);
+    mstring_free(sta_pass);
+    mstring_free(wifi_mode);
     return ESP_FAIL;
 }
 
@@ -538,11 +592,6 @@ const httpd_uri_t uri_handlers[] = {
     {.uri = "/api/v1/wifi/list",
      .method = HTTP_GET,
      .handler = wifi_list_get_handler,
-     .user_ctx = NULL},
-
-    {.uri = "/api/v1/wifi/mode",
-     .method = HTTP_GET,
-     .handler = wifi_mode_get_handler,
      .user_ctx = NULL},
 
     {.uri = "/api/v1/wifi/set_credenitals",
