@@ -44,7 +44,7 @@ esp_err_t nvs_save_string(const char* key, const mstring_t* value) {
     esp_err_t err;
 
     do {
-        err = nvs_open(NVS_STORE, NVS_READWRITE, &nvs_handle);
+        err = nvs_open_from_partition(NVS_STORE, "config", NVS_READWRITE, &nvs_handle);
         if(err != ESP_OK) break;
 
         err = nvs_set_str(nvs_handle, key, mstring_get_cstr(value));
@@ -66,7 +66,7 @@ esp_err_t nvs_load_string(const char* key, mstring_t* value) {
     char* buffer = NULL;
 
     do {
-        err = nvs_open(NVS_STORE, NVS_READONLY, &nvs_handle);
+        err = nvs_open_from_partition(NVS_STORE, "config", NVS_READONLY, &nvs_handle);
         if(err != ESP_OK) break;
 
         size_t required_size = 0;
