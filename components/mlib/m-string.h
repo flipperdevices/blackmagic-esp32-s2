@@ -95,6 +95,14 @@ size_t mstring_size(const mstring_t* mstr);
 char mstring_get_char(const mstring_t* mstr, size_t index);
 
 /**
+ * Compare the string to the other string
+ * @param mstr 
+ * @param mstr2 
+ * @return int 
+ */
+int mstring_cmp(const mstring_t* mstr, const mstring_t* mstr2);
+
+/**
  * Compare the string to the C string
  * @param mstr 
  * @param cstr 

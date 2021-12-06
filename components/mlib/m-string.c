@@ -59,6 +59,10 @@ char mstring_get_char(const mstring_t* mstr, size_t index) {
     return string_get_char(mstr->str, index);
 }
 
+int mstring_cmp(const mstring_t* mstr, const mstring_t* mstr2) {
+    return string_cmp(mstr->str, mstr2->str);
+}
+
 int mstring_cmp_cstr(const mstring_t* mstr, const char* cstr) {
     return string_cmp_str(mstr->str, cstr);
 }
