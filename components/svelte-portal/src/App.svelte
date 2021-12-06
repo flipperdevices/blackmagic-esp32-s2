@@ -36,8 +36,10 @@
   let popup_message_text;
 
   let mode_select;
-  let ssid_input;
-  let password_input;
+  let ap_ssid_input;
+  let ap_pass_input;
+  let sta_ssid_input;
+  let sta_pass_input;
 
   let current_tab = "WiFi";
   if (localStorage.getItem("current_tab") != null) {
@@ -49,11 +51,17 @@
     popup_message.show();
 
     await api_post(server + "/api/v1/wifi/set_credenitals", {
-      mode: mode_select.get_value(),
-      ssid: ssid_input.get_value(),
-      pass: password_input.get_value(),
-    }).then(() => {
-      popup_message_text = "Saved!";
+      wifi_mode: mode_select.get_value(),
+      ap_ssid: ap_ssid_input.get_value(),
+      ap_pass: ap_pass_input.get_value(),
+      sta_ssid: sta_ssid_input.get_value(),
+      sta_pass: sta_pass_input.get_value(),
+    }).then((json) => {
+      if (json.error) {
+        popup_message_text = json.error;
+      } else {
+        popup_message_text = "Saved!";
+      }
     });
   }
 
@@ -127,30 +135,48 @@
             <div><Spinner /></div>
             <div class="value-name">Pass:</div>
             <div><Spinner /></div>
+            <div class="value-name">SSID:</div>
+            <div><Spinner /></div>
+            <div class="value-name">Pass:</div>
+            <div><Spinner /></div>
           {:then json}
             <div class="value-name">Mode:</div>
             <div>
               <Select
                 bind:this={mode_select}
                 items={[
-                  { text: "STA", value: "STA" },
-                  { text: "AP", value: "AP" },
+                  { text: "STA (connect to WiFi)", value: "STA" },
+                  { text: "AP (make own WiFi AP)", value: "AP" },
                 ]}
-                value={json.mode}
+                value={json.wifi_mode}
               />
             </div>
 
+            <div class="value-name">STA</div>
+            <div>(connect to WiFi)</div>
             <div class="value-name">SSID:</div>
             <div>
-              <Input value={json.ssid} bind:this={ssid_input} /><ButtonInline
-                value="+"
-                on:click={popup_select_net.show}
-              />
+              <Input
+                value={json.sta_ssid}
+                bind:this={sta_ssid_input}
+              /><ButtonInline value="+" on:click={popup_select_net.show} />
             </div>
 
             <div class="value-name">Pass:</div>
             <div>
-              <Input value={json.pass} bind:this={password_input} />
+              <Input value={json.sta_pass} bind:this={sta_pass_input} />
+            </div>
+
+            <div class="value-name">AP</div>
+            <div>(make own WiFi AP)</div>
+            <div class="value-name">SSID:</div>
+            <div>
+              <Input value={json.ap_ssid} bind:this={ap_ssid_input} />
+            </div>
+
+            <div class="value-name">Pass:</div>
+            <div>
+              <Input value={json.ap_pass} bind:this={ap_pass_input} />
             </div>
           {:catch error}
             <error>{error.message}</error>
@@ -233,7 +259,7 @@
             value="[{net.ssid} {net.channel}ch {net.rssi}dBm {net.auth}]"
             on:click={() => {
               popup_select_net.close();
-              ssid_input.set_value(net.ssid);
+              sta_ssid_input.set_value(net.ssid);
             }}
           />
         </div>
