@@ -4,6 +4,7 @@
 #include "cli-args.h"
 #include "cli-commands.h"
 #include "helpers.h"
+#include "network.h"
 
 #define WIFI_SCAN_SIZE 20
 
@@ -160,4 +161,73 @@ void cli_wifi_sta_info(Cli* cli, mstring_t* args) {
     }
 
     free(ap_info);
+}
+
+void cli_wifi_ip(Cli* cli, mstring_t* args) {
+    wifi_mode_t mode;
+    tcpip_adapter_ip_info_t ip_info;
+
+    if(esp_wifi_get_mode(&mode) == ESP_OK) {
+        if(mode == WIFI_MODE_STA) {
+            if(tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info) == ESP_OK) {
+                cli_printf(
+                    cli,
+                    "ip:   %d.%d.%d.%d",
+                    (ip_info.ip.addr >> 0) & 0xFF,
+                    (ip_info.ip.addr >> 8) & 0xFF,
+                    (ip_info.ip.addr >> 16) & 0xFF,
+                    (ip_info.ip.addr >> 24) & 0xFF);
+                cli_write_eol(cli);
+                cli_printf(
+                    cli,
+                    "mask: %d.%d.%d.%d",
+                    (ip_info.netmask.addr >> 0) & 0xFF,
+                    (ip_info.netmask.addr >> 8) & 0xFF,
+                    (ip_info.netmask.addr >> 16) & 0xFF,
+                    (ip_info.netmask.addr >> 24) & 0xFF);
+                cli_write_eol(cli);
+                cli_printf(
+                    cli,
+                    "gw:   %d.%d.%d.%d",
+                    (ip_info.gw.addr >> 0) & 0xFF,
+                    (ip_info.gw.addr >> 8) & 0xFF,
+                    (ip_info.gw.addr >> 16) & 0xFF,
+                    (ip_info.gw.addr >> 24) & 0xFF);
+            } else {
+                cli_write_str(cli, "FAIL");
+            }
+        } else if(mode == WIFI_MODE_APSTA) {
+            if(tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info) == ESP_OK) {
+                cli_printf(
+                    cli,
+                    "ip:   %d.%d.%d.%d",
+                    (ip_info.ip.addr >> 0) & 0xFF,
+                    (ip_info.ip.addr >> 8) & 0xFF,
+                    (ip_info.ip.addr >> 16) & 0xFF,
+                    (ip_info.ip.addr >> 24) & 0xFF);
+                cli_write_eol(cli);
+                cli_printf(
+                    cli,
+                    "mask: %d.%d.%d.%d",
+                    (ip_info.netmask.addr >> 0) & 0xFF,
+                    (ip_info.netmask.addr >> 8) & 0xFF,
+                    (ip_info.netmask.addr >> 16) & 0xFF,
+                    (ip_info.netmask.addr >> 24) & 0xFF);
+                cli_write_eol(cli);
+                cli_printf(
+                    cli,
+                    "gw:   %d.%d.%d.%d",
+                    (ip_info.gw.addr >> 0) & 0xFF,
+                    (ip_info.gw.addr >> 8) & 0xFF,
+                    (ip_info.gw.addr >> 16) & 0xFF,
+                    (ip_info.gw.addr >> 24) & 0xFF);
+            } else {
+                cli_write_str(cli, "FAIL");
+            }
+        } else {
+            cli_write_str(cli, "FAIL");
+        }
+    } else {
+        cli_write_str(cli, "FAIL");
+    }
 }

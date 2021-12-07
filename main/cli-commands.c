@@ -18,6 +18,7 @@ void cli_ping(Cli* cli, mstring_t* args);
 void cli_sw_reset(Cli* cli, mstring_t* args);
 void cli_wifi_scan(Cli* cli, mstring_t* args);
 void cli_wifi_ap_clients(Cli* cli, mstring_t* args);
+void cli_wifi_ip(Cli* cli, mstring_t* args);
 void cli_wifi_sta_info(Cli* cli, mstring_t* args);
 
 void cli_config_get(Cli* cli, mstring_t* args);
@@ -101,6 +102,10 @@ const CliItem cli_items[] = {
     {
         .name = "wifi_ap_clients",
         .callback = cli_wifi_ap_clients,
+    },
+    {
+        .name = "wifi_ip",
+        .callback = cli_wifi_ip,
     },
     {
         .name = "wifi_sta_info",
