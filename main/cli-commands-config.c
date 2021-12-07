@@ -71,6 +71,8 @@ void cli_config_set_wifi_mode(Cli* cli, mstring_t* args) {
 
         if(nvs_config_set_wifi_mode(wifi_mode) == ESP_OK) {
             cli_write_str(cli, "OK");
+            cli_write_eol(cli);
+            cli_write_str(cli, "Reboot to apply");
         } else {
             cli_write_str(cli, "ERR");
         }
@@ -90,6 +92,8 @@ void cli_config_set_ap_pass(Cli* cli, mstring_t* args) {
 
         if(nvs_config_set_ap_pass(pass) == ESP_OK) {
             cli_write_str(cli, "OK");
+            cli_write_eol(cli);
+            cli_write_str(cli, "Reboot to apply");
         } else {
             cli_write_str(cli, "config_set_ap_pass \"<pass>\", min 8 symbols or empty quotes");
         }
@@ -109,6 +113,8 @@ void cli_config_set_ap_ssid(Cli* cli, mstring_t* args) {
 
         if(nvs_config_set_ap_ssid(ssid) == ESP_OK) {
             cli_write_str(cli, "OK");
+            cli_write_eol(cli);
+            cli_write_str(cli, "Reboot to apply");
         } else {
             cli_write_str(cli, "config_set_ap_ssid \"<ssid>\", 1-32 symbols");
         }
@@ -128,6 +134,8 @@ void cli_config_set_sta_pass(Cli* cli, mstring_t* args) {
 
         if(nvs_config_set_sta_pass(pass) == ESP_OK) {
             cli_write_str(cli, "OK");
+            cli_write_eol(cli);
+            cli_write_str(cli, "Reboot to apply");
         } else {
             cli_write_str(cli, "config_set_sta_pass \"<pass>\", min 8 symbols or empty quotes");
         }
@@ -147,6 +155,8 @@ void cli_config_set_sta_ssid(Cli* cli, mstring_t* args) {
 
         if(nvs_config_set_sta_ssid(ssid) == ESP_OK) {
             cli_write_str(cli, "OK");
+            cli_write_eol(cli);
+            cli_write_str(cli, "Reboot to apply");
         } else {
             cli_write_str(cli, "config_set_sta_ssid \"<ssid>\", 1-32 symbols");
         }

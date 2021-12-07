@@ -34,52 +34,53 @@ void cli_nvs_dump(Cli* cli, mstring_t* args);
 const CliItem cli_items[] = {
     {
         .name = "!",
-        .desc = "alias to device_info",
+        .desc = "alias for device_info",
         .callback = cli_device_info,
     },
     {
         .name = "?",
-        .desc = "alias to help",
+        .desc = "alias for help",
         .callback = cli_help,
     },
     {
         .name = "config_get",
-        .desc = "show current config from NVS",
+        .desc = "show current config",
         .callback = cli_config_get,
     },
     {
         .name = "config_set_wifi_mode",
-        .desc = "write wifi mode to NVS, AP (make own WiFi AP) or STA (connect to WiFi)",
+        .desc =
+            "set Wi-Fi mode, AP (own access point) or STA (join another network), requires a reboot to apply",
         .callback = cli_config_set_wifi_mode,
     },
     {
         .name = "config_set_ap_pass",
-        .desc = "write password for AP mode to NVS",
+        .desc = "set AP mode password, requires a reboot to apply",
         .callback = cli_config_set_ap_pass,
     },
     {
         .name = "config_set_ap_ssid",
-        .desc = "write ssid for AP mode to NVS",
+        .desc = "set AP mode SSID, requires a reboot to apply",
         .callback = cli_config_set_ap_ssid,
     },
     {
         .name = "config_set_sta_pass",
-        .desc = "write password for STA mode to NVS",
+        .desc = "set STA mode password, requires a reboot to apply",
         .callback = cli_config_set_sta_pass,
     },
     {
         .name = "config_set_sta_ssid",
-        .desc = "write ssid for STA mode to NVS",
+        .desc = "set STA mode SSID, requires a reboot to apply",
         .callback = cli_config_set_sta_ssid,
     },
     {
         .name = "device_info",
-        .desc = "show device info, such as mac, fw version and chip info",
+        .desc = "show device info (mac, fw version, chip info, etc)",
         .callback = cli_device_info,
     },
     {
         .name = "factory_reset",
-        .desc = "reset NVS storage",
+        .desc = "reset config (clears NVS storage)",
         .callback = cli_factory_reset,
     },
     {
@@ -94,7 +95,7 @@ const CliItem cli_items[] = {
     },
     {
         .name = "help",
-        .desc = "this help",
+        .desc = "show this help",
         .callback = cli_help,
     },
     {
@@ -104,7 +105,7 @@ const CliItem cli_items[] = {
     },
     {
         .name = "nvs_dump",
-        .desc = "show everything that stored in NVS",
+        .desc = "show all NVS contents",
         .callback = cli_nvs_dump,
     },
     {
@@ -119,22 +120,22 @@ const CliItem cli_items[] = {
     },
     {
         .name = "wifi_ap_clients",
-        .desc = "list of clients connected in AP mode",
+        .desc = "list AP mode clients",
         .callback = cli_wifi_ap_clients,
     },
     {
         .name = "wifi_ip",
-        .desc = "current ip, mask and gateway",
+        .desc = "show current ip, mask and gateway",
         .callback = cli_wifi_ip,
     },
     {
         .name = "wifi_sta_info",
-        .desc = "information about the station we are connected to",
+        .desc = "show STA mode network info",
         .callback = cli_wifi_sta_info,
     },
     {
         .name = "wifi_scan",
-        .desc = "shows all the surrounding Wi-Fi networks, that can take some time",
+        .desc = "scan all available Wi-Fi networks (takes some time)",
         .callback = cli_wifi_scan,
     },
 };

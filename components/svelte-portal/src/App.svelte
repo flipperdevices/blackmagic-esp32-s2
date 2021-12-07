@@ -145,8 +145,8 @@
               <Select
                 bind:this={mode_select}
                 items={[
-                  { text: "STA (connect to WiFi)", value: "STA" },
-                  { text: "AP (make own WiFi AP)", value: "AP" },
+                  { text: "STA (join another network)", value: "STA" },
+                  { text: "AP (own access point)", value: "AP" },
                 ]}
                 value={json.wifi_mode}
               />
