@@ -13,6 +13,7 @@ typedef void (*CliCallback)(Cli* cli, mstring_t* args);
 
 struct CliItem {
     const char* name;
+    const char* desc;
     CliCallback callback;
 };
 

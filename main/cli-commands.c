@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <esp_system.h>
 #include "cli.h"
 #include "led.h"
@@ -15,7 +16,7 @@ void cli_gpio_set(Cli* cli, mstring_t* args);
 void cli_led(Cli* cli, mstring_t* args);
 void cli_help(Cli* cli, mstring_t* args);
 void cli_ping(Cli* cli, mstring_t* args);
-void cli_sw_reset(Cli* cli, mstring_t* args);
+void cli_sw_reboot(Cli* cli, mstring_t* args);
 void cli_wifi_scan(Cli* cli, mstring_t* args);
 void cli_wifi_ap_clients(Cli* cli, mstring_t* args);
 void cli_wifi_ip(Cli* cli, mstring_t* args);
@@ -33,86 +34,107 @@ void cli_nvs_dump(Cli* cli, mstring_t* args);
 const CliItem cli_items[] = {
     {
         .name = "!",
+        .desc = "alias to device_info",
         .callback = cli_device_info,
     },
     {
         .name = "?",
+        .desc = "alias to help",
         .callback = cli_help,
     },
     {
         .name = "config_get",
+        .desc = "show current config from NVS",
         .callback = cli_config_get,
     },
     {
         .name = "config_set_wifi_mode",
+        .desc = "write wifi mode to NVS, AP (make own WiFi AP) or STA (connect to WiFi)",
         .callback = cli_config_set_wifi_mode,
     },
     {
         .name = "config_set_ap_pass",
+        .desc = "write password for AP mode to NVS",
         .callback = cli_config_set_ap_pass,
     },
     {
         .name = "config_set_ap_ssid",
+        .desc = "write ssid for AP mode to NVS",
         .callback = cli_config_set_ap_ssid,
     },
     {
         .name = "config_set_sta_pass",
+        .desc = "write password for STA mode to NVS",
         .callback = cli_config_set_sta_pass,
     },
     {
         .name = "config_set_sta_ssid",
+        .desc = "write ssid for STA mode to NVS",
         .callback = cli_config_set_sta_ssid,
     },
     {
         .name = "device_info",
+        .desc = "show device info, such as mac, fw version and chip info",
         .callback = cli_device_info,
     },
     {
         .name = "factory_reset",
+        .desc = "reset NVS storage",
         .callback = cli_factory_reset,
     },
     {
         .name = "gpio_get",
+        .desc = "get gpio level",
         .callback = cli_gpio_get,
     },
     {
         .name = "gpio_set",
+        .desc = "set gpio level",
         .callback = cli_gpio_set,
     },
     {
         .name = "help",
+        .desc = "this help",
         .callback = cli_help,
     },
     {
         .name = "led",
+        .desc = "set led color",
         .callback = cli_led,
     },
     {
         .name = "nvs_dump",
+        .desc = "show everything that stored in NVS",
         .callback = cli_nvs_dump,
     },
     {
         .name = "ping",
+        .desc = "answers pong",
         .callback = cli_ping,
     },
     {
-        .name = "reset",
-        .callback = cli_sw_reset,
+        .name = "reboot",
+        .desc = "reboot device",
+        .callback = cli_sw_reboot,
     },
     {
         .name = "wifi_ap_clients",
+        .desc = "list of clients connected in AP mode",
         .callback = cli_wifi_ap_clients,
     },
     {
         .name = "wifi_ip",
+        .desc = "current ip, mask and gateway",
         .callback = cli_wifi_ip,
     },
     {
         .name = "wifi_sta_info",
+        .desc = "information about the station we are connected to",
         .callback = cli_wifi_sta_info,
     },
     {
         .name = "wifi_scan",
+        .desc = "shows all the surrounding Wi-Fi networks, that can take some time",
         .callback = cli_wifi_scan,
     },
 };
@@ -120,8 +142,25 @@ const CliItem cli_items[] = {
 size_t cli_items_count = COUNT_OF(cli_items);
 
 void cli_help(Cli* cli, mstring_t* args) {
+    size_t max_len = 0;
+    for(size_t i = 0; i < cli_items_count; i++) {
+        if(strlen(cli_items[i].name) > max_len) {
+            max_len = strlen(cli_items[i].name);
+        }
+    }
+
+    max_len += 1;
+
     for(size_t i = 0; i < cli_items_count; i++) {
         cli_write_str(cli, cli_items[i].name);
+
+        if(cli_items[i].desc != NULL && strlen(cli_items[i].desc)) {
+            for(size_t s = 0; s < (max_len - strlen(cli_items[i].name)); s++) {
+                cli_write_str(cli, " ");
+            }
+            cli_write_str(cli, "- ");
+            cli_write_str(cli, cli_items[i].desc);
+        }
 
         if((i + 1) < cli_items_count) {
             cli_write_eol(cli);
@@ -129,8 +168,8 @@ void cli_help(Cli* cli, mstring_t* args) {
     }
 }
 
-void cli_sw_reset(Cli* cli, mstring_t* args) {
-    cli_write_str(cli, "SW RESET");
+void cli_sw_reboot(Cli* cli, mstring_t* args) {
+    cli_write_str(cli, "SW REBOOT");
     cli_write_eol(cli);
     cli_flush(cli);
     esp_restart();

@@ -43,6 +43,11 @@ void cli_config_get(Cli* cli, mstring_t* args) {
 
 void cli_config_set_wifi_mode_usage(Cli* cli) {
     cli_write_str(cli, "config_set_wifi_mode <AP|STA>");
+    cli_write_eol(cli);
+    cli_write_str(cli, " AP (make own WiFi AP)");
+    cli_write_eol(cli);
+    cli_write_str(cli, " STA (connect to WiFi)");
+    cli_write_eol(cli);
 }
 
 void cli_config_set_wifi_mode(Cli* cli, mstring_t* args) {
