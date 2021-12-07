@@ -37,7 +37,6 @@ void cli_config_get(Cli* cli, mstring_t* args) {
     }
 
     cli_printf(cli, "wifi_mode: %s", mstring_get_cstr(value));
-    cli_write_eol(cli);
 
     mstring_free(value);
 }
