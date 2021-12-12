@@ -59,6 +59,14 @@ execute_process(
 # Build date
 string(TIMESTAMP FW_BUILD_DATE "%d-%m-%Y")
 
+set(INFO_FLAGS
+    -DFW_BUILD_DATE="${FW_BUILD_DATE}"
+    -DFW_GIT_COMMIT="${FW_GIT_COMMIT}"
+    -DFW_GIT_BRANCH="${FW_GIT_BRANCH}"
+    -DFW_GIT_BRANCH_NUM="${FW_GIT_BRANCH_NUM}"
+    -DFW_GIT_VERSION="${FW_GIT_VERSION}"
+)
+
 message(STATUS "IDF version: ${IDF_VER}")
 message(STATUS "FW date: ${FW_BUILD_DATE}")
 message(STATUS "FW commit: ${FW_GIT_COMMIT}")
@@ -66,8 +74,4 @@ message(STATUS "FW branch: ${FW_GIT_BRANCH}")
 message(STATUS "FW branch num: ${FW_GIT_BRANCH_NUM}")
 message(STATUS "FW version: ${FW_GIT_VERSION}")
 
-set_property(SOURCE "cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_BUILD_DATE="${FW_BUILD_DATE}")
-set_property(SOURCE "cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_GIT_COMMIT="${FW_GIT_COMMIT}")
-set_property(SOURCE "cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_GIT_BRANCH="${FW_GIT_BRANCH}")
-set_property(SOURCE "cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_GIT_BRANCH_NUM="${FW_GIT_BRANCH_NUM}")
-set_property(SOURCE "cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS -DFW_GIT_VERSION="${FW_GIT_VERSION}")
+set_property(SOURCE "cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS ${INFO_FLAGS})
