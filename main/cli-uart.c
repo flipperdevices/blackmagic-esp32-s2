@@ -1,7 +1,7 @@
 #include <driver/uart.h>
 #include <driver/gpio.h>
 #include <string.h>
-#include "cli.h"
+#include "cli/cli.h"
 
 #define CLI_UART_PORT_NUM UART_NUM_1
 #define CLI_UART_TXD_PIN (17)
@@ -69,12 +69,7 @@ void cli_uart_init() {
 #endif
 
     ESP_ERROR_CHECK(uart_driver_install(
-        CLI_UART_PORT_NUM,
-        CLI_UART_BUF_SIZE * 4,
-        0,
-        10,
-        &cli_uart_queue,
-        intr_alloc_flags));
+        CLI_UART_PORT_NUM, CLI_UART_BUF_SIZE * 4, 0, 10, &cli_uart_queue, intr_alloc_flags));
     ESP_ERROR_CHECK(uart_param_config(CLI_UART_PORT_NUM, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(
         CLI_UART_PORT_NUM, CLI_UART_TXD_PIN, CLI_UART_RXD_PIN, CLI_UART_RTS_PIN, CLI_UART_CTS_PIN));
