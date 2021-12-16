@@ -10,14 +10,12 @@
 #include <esp_log.h>
 #include <esp_check.h>
 
+#include "dual-cdc-driver.h"
+
 #define TAG "usb-dual-cdc"
 
 #define CONFIG_TINYUSB_TASK_STACK_SIZE 4096
-
 #define CONFIG_TINYUSB_TASK_PRIORITY 17
-
-extern tusb_desc_device_t desc_device;
-extern char const* blackmagic_string_descriptor[];
 
 static void configure_pins(usb_hal_context_t* usb) {
     /* usb_periph_iopins currently configures USB_OTG as USB Device.
@@ -51,7 +49,7 @@ static void tusb_device_task(void* arg) {
     }
 }
 
-esp_err_t dual_cdc_driver_install() {
+esp_err_t dual_cdc_driver_install(void) {
     // Enable APB CLK to USB peripheral
     periph_module_enable(PERIPH_USB_MODULE);
     periph_module_reset(PERIPH_USB_MODULE);

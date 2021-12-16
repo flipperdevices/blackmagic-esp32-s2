@@ -17,6 +17,7 @@ endif()
 target_include_directories(${COMPONENT_TARGET} INTERFACE
     "${FREERTOS_ORIG_INCLUDE_PATH}"
     "${COMPONENT_DIR}/config/"
+    "${COMPONENT_DIR}/dual-cdc/"
     "${COMPONENT_DIR}/tinyusb/hw/bsp/"
     "${COMPONENT_DIR}/tinyusb/src/"
     "${COMPONENT_DIR}/tinyusb/src/device"
