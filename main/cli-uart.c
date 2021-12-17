@@ -1,52 +1,42 @@
-#include <driver/uart.h>
-#include <driver/gpio.h>
+// #include <driver/uart.h>
+// #include <driver/gpio.h>
 #include <string.h>
+#include "led.h"
 #include "cli/cli.h"
+#include <simple-uart.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/stream_buffer.h>
 
 #define CLI_UART_PORT_NUM UART_NUM_1
 #define CLI_UART_TXD_PIN (17)
 #define CLI_UART_RXD_PIN (18)
-#define CLI_UART_RTS_PIN (UART_PIN_NO_CHANGE)
-#define CLI_UART_CTS_PIN (UART_PIN_NO_CHANGE)
 #define CLI_UART_BAUD_RATE (115200)
 #define CLI_UART_BUF_SIZE (128)
+#define CLI_UART_TX_BUF_SIZE (64)
 #define CLI_UART_RX_BUF_SIZE (64)
 
 static Cli* cli_uart;
-static QueueHandle_t cli_uart_queue;
-static uint8_t cli_rx_buffer[CLI_UART_RX_BUF_SIZE];
-static size_t cli_rx_index = 0;
+static uint8_t uart_tx_buffer[CLI_UART_TX_BUF_SIZE];
+static size_t uart_tx_index = 0;
+StreamBufferHandle_t uart_rx_stream;
 
 static void cli_uart_write(const uint8_t* data, size_t data_size, void* context);
 static void cli_uart_flush(void* context);
 
+static void cli_uart_rx_isr(void* context);
+
 static void cli_uart_rx_task(void* pvParameters) {
-    uart_event_t event;
-    uint8_t* rx_buffer = (uint8_t*)malloc(CLI_UART_BUF_SIZE);
-    int received = 0;
-
-    for(;;) {
-        //Waiting for UART event.
-        if(xQueueReceive(cli_uart_queue, (void*)&event, (portTickType)portMAX_DELAY)) {
-            bzero(rx_buffer, CLI_UART_BUF_SIZE);
-            switch(event.type) {
-            case UART_DATA:
-                received =
-                    uart_read_bytes(CLI_UART_PORT_NUM, rx_buffer, event.size, portMAX_DELAY);
-                for(int i = 0; i < received; i++) {
-                    cli_handle_char(cli_uart, rx_buffer[i]);
-                }
-
-                break;
-            default:
-                break;
+    while(1) {
+        uint8_t data[CLI_UART_RX_BUF_SIZE];
+        size_t length =
+            xStreamBufferReceive(uart_rx_stream, data, CLI_UART_RX_BUF_SIZE, portMAX_DELAY);
+        if(length > 0) {
+            for(size_t i = 0; i < length; i++) {
+                cli_handle_char(cli_uart, data[i]);
             }
         }
     }
-
-    free(rx_buffer);
-    rx_buffer = NULL;
-    vTaskDelete(NULL);
 }
 
 void cli_uart_init() {
@@ -54,45 +44,59 @@ void cli_uart_init() {
     cli_set_write_cb(cli_uart, cli_uart_write);
     cli_set_flush_cb(cli_uart, cli_uart_flush);
 
-    uart_config_t uart_config = {
+    uart_rx_stream = xStreamBufferCreate(CLI_UART_BUF_SIZE, 1);
+
+    xTaskCreate(cli_uart_rx_task, "cli_uart_rx", 4096, NULL, 5, NULL);
+
+    UartConfig config = {
+        .uart_num = CLI_UART_PORT_NUM,
         .baud_rate = CLI_UART_BAUD_RATE,
         .data_bits = UART_DATA_8_BITS,
         .parity = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .source_clk = UART_SCLK_APB,
+        .tx_pin_num = CLI_UART_TXD_PIN,
+        .rx_pin_num = CLI_UART_RXD_PIN,
+        .isr_context = uart_rx_stream,
+        .rx_isr = cli_uart_rx_isr,
     };
-    int intr_alloc_flags = 0;
 
-#if CONFIG_UART_ISR_IN_IRAM
-    intr_alloc_flags = ESP_INTR_FLAG_IRAM;
-#endif
-
-    ESP_ERROR_CHECK(uart_driver_install(
-        CLI_UART_PORT_NUM, CLI_UART_BUF_SIZE * 4, 0, 10, &cli_uart_queue, intr_alloc_flags));
-    ESP_ERROR_CHECK(uart_param_config(CLI_UART_PORT_NUM, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(
-        CLI_UART_PORT_NUM, CLI_UART_TXD_PIN, CLI_UART_RXD_PIN, CLI_UART_RTS_PIN, CLI_UART_CTS_PIN));
+    simple_uart_init(&config);
 
     cli_force_motd(cli_uart);
-    xTaskCreate(cli_uart_rx_task, "cli_uart_rx", 4096, NULL, 5, NULL);
 }
 
 static void cli_uart_write(const uint8_t* data, size_t data_size, void* context) {
     for(size_t i = 0; i < data_size; i++) {
-        cli_rx_buffer[cli_rx_index] = data[i];
-        cli_rx_index++;
+        uart_tx_buffer[uart_tx_index] = data[i];
+        uart_tx_index++;
 
-        if(cli_rx_index == CLI_UART_RX_BUF_SIZE) {
+        if(uart_tx_index == CLI_UART_TX_BUF_SIZE) {
             cli_uart_flush(NULL);
         }
     }
 }
 
 static void cli_uart_flush(void* context) {
-    if(cli_rx_index > 0) {
-        uart_write_bytes(CLI_UART_PORT_NUM, cli_rx_buffer, cli_rx_index);
+    if(uart_tx_index > 0) {
+        simple_uart_write(CLI_UART_PORT_NUM, uart_tx_buffer, uart_tx_index);
     }
 
-    cli_rx_index = 0;
+    uart_tx_index = 0;
+}
+
+static void cli_uart_rx_isr(void* context) {
+    StreamBufferHandle_t stream = context;
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    uint8_t data;
+    while(simple_uart_available(CLI_UART_PORT_NUM)) {
+        simple_uart_read(CLI_UART_PORT_NUM, &data, 1);
+
+        size_t ret __attribute__((unused));
+        ret = xStreamBufferSendFromISR(stream, &data, 1, &xHigherPriorityTaskWoken);
+        // we will drop data if the stream overflows
+        // ESP_ERROR_CHECK(ret != 1);
+    }
+
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
