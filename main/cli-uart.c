@@ -44,7 +44,7 @@ void cli_uart_init() {
     cli_set_write_cb(cli_uart, cli_uart_write);
     cli_set_flush_cb(cli_uart, cli_uart_flush);
 
-    uart_rx_stream = xStreamBufferCreate(CLI_UART_BUF_SIZE, 1);
+    uart_rx_stream = xStreamBufferCreate(CLI_UART_BUF_SIZE * 4, 1);
 
     xTaskCreate(cli_uart_rx_task, "cli_uart_rx", 4096, NULL, 5, NULL);
 

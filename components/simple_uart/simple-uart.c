@@ -74,12 +74,13 @@ void simple_uart_init(UartConfig* cfg) {
     uart_hal_set_rxfifo_full_thr(UART_HAL(cfg->uart_num), UART_RX_FIFO_THRESH);
     uart_hal_set_txfifo_empty_thr(UART_HAL(cfg->uart_num), UART_TX_FIFO_THRESH);
     uart_hal_rxfifo_rst(UART_HAL(cfg->uart_num));
-    uart_hal_set_parity(UART_HAL(cfg->uart_num), cfg->parity);
-    uart_hal_set_stop_bits(UART_HAL(cfg->uart_num), cfg->stop_bits);
-    uart_hal_set_data_bit_num(UART_HAL(cfg->uart_num), cfg->data_bits);
     uart_hal_set_hw_flow_ctrl(UART_HAL(cfg->uart_num), UART_HW_FLOWCTRL_DISABLE, 0);
-    uart_hal_set_baudrate(UART_HAL(cfg->uart_num), cfg->baud_rate);
     uart_hal_set_rx_timeout(UART_HAL(cfg->uart_num), 0x16);
+
+    simple_uart_set_baud_rate(cfg->uart_num, cfg->baud_rate);
+    simple_uart_set_stop_bits(cfg->uart_num, cfg->stop_bits);
+    simple_uart_set_parity(cfg->uart_num, cfg->parity);
+    simple_uart_set_data_bits(cfg->uart_num, cfg->data_bits);
 
     esp_intr_alloc(
         uart_periph_signal[cfg->uart_num].irq,
@@ -136,8 +137,7 @@ static void simple_uart_isr(void* arg) {
     }
     uart_hal_clr_intsts_mask(hal_context, uart_intr_status);
 
-    if((uart_intr_status & UART_INTR_RXFIFO_TOUT) || (uart_intr_status & UART_INTR_RXFIFO_FULL) ||
-       (uart_intr_status & UART_INTR_CMD_CHAR_DET) || true) {
+    if((uart_intr_status & UART_INTR_RXFIFO_TOUT) || (uart_intr_status & UART_INTR_RXFIFO_FULL)) {
         if(context->rx_isr) {
             context->rx_isr(context->isr_context);
         } else {
@@ -148,4 +148,20 @@ static void simple_uart_isr(void* arg) {
             }
         }
     }
+}
+
+void simple_uart_set_baud_rate(uint8_t uart_num, uint32_t baud_rate) {
+    uart_hal_set_baudrate(UART_HAL(uart_num), baud_rate);
+}
+
+void simple_uart_set_stop_bits(uint8_t uart_num, uart_stop_bits_t stop_bits) {
+    uart_hal_set_stop_bits(UART_HAL(uart_num), stop_bits);
+}
+
+void simple_uart_set_parity(uint8_t uart_num, uart_parity_t parity) {
+    uart_hal_set_parity(UART_HAL(uart_num), parity);
+}
+
+void simple_uart_set_data_bits(uint8_t uart_num, uart_word_length_t data_bits) {
+    uart_hal_set_data_bit_num(UART_HAL(uart_num), data_bits);
 }
