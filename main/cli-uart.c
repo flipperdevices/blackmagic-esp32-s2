@@ -74,6 +74,7 @@ void cli_uart_init() {
     ESP_ERROR_CHECK(uart_set_pin(
         CLI_UART_PORT_NUM, CLI_UART_TXD_PIN, CLI_UART_RXD_PIN, CLI_UART_RTS_PIN, CLI_UART_CTS_PIN));
 
+    cli_force_motd(cli_uart);
     xTaskCreate(cli_uart_rx_task, "cli_uart_rx", 4096, NULL, 5, NULL);
 }
 
