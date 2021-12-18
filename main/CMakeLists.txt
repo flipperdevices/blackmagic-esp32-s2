@@ -1,6 +1,7 @@
 set(SOURCES 
     "main.c"
     "usb-cdc.c"
+    "usb-uart.c"
     "nvs.c"
     "nvs-config.c"
     "led.c"
@@ -9,7 +10,6 @@ set(SOURCES
     "delay.c"
     "network.c"
     "network-http.c"
-    "network-uart.c"
     "network-gdb.c"
     "cli-uart.c"
     "cli/cli.c"
@@ -19,6 +19,7 @@ set(SOURCES
     "cli/cli-commands-config.c"
     "cli/cli-commands-device-info.c"
     "cli/cli-args.c"
+    "soft-uart-log.c"
 )
 
 set(INCLUDES 

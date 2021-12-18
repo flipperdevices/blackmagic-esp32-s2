@@ -14,6 +14,7 @@
 #include <sdkconfig.h>
 #include <driver/gpio.h>
 #include "usb-cdc.h"
+#include "usb-uart.h"
 #include "led.h"
 #include "delay.h"
 #include <gdb-glue.h>
@@ -24,14 +25,11 @@
 #define USB_DP_PIN (20)
 
 #define GDB_BUF_RX_SIZE 64
-
-typedef enum {
-    CDCTypeGDB = 0,
-    CDCTypeUART = 1,
-} CDCType;
+#define UART_BUF_RX_SIZE 64
 
 static const char* TAG = "usb-cdc";
-static uint8_t buffer_rx[GDB_BUF_RX_SIZE];
+static uint8_t gdb_buffer_rx[GDB_BUF_RX_SIZE];
+static uint8_t uart_buffer_rx[UART_BUF_RX_SIZE];
 
 typedef struct {
     volatile bool connected;
@@ -39,25 +37,48 @@ typedef struct {
 
 static USBCDC usb_cdc;
 
-void usb_cdc_tx_char(uint8_t c, bool flush) {
-    tud_cdc_n_write(CDCTypeGDB, &c, 1);
+typedef enum {
+    CDCTypeGDB = 0,
+    CDCTypeUART = 1,
+} CDCType;
+
+static void usb_cdc_tx_char(CDCType type, uint8_t c, bool flush) {
+    tud_cdc_n_write(type, &c, 1);
 
     if(flush) {
-        tud_cdc_n_write_flush(CDCTypeGDB);
+        tud_cdc_n_write_flush(type);
     }
+}
+
+void usb_cdc_gdb_tx_char(uint8_t c, bool flush) {
+    usb_cdc_tx_char(CDCTypeGDB, c, flush);
+}
+
+void usb_cdc_uart_tx_char(uint8_t c, bool flush) {
+    usb_cdc_tx_char(CDCTypeUART, c, flush);
 }
 
 void usb_cdc_gdb_rx_callback(void) {
     if(gdb_glue_can_receive()) {
         size_t max_len = gdb_glue_get_free_size();
         if(max_len > GDB_BUF_RX_SIZE) max_len = GDB_BUF_RX_SIZE;
-        uint32_t rx_size = tud_cdc_n_read(CDCTypeGDB, buffer_rx, max_len);
+        uint32_t rx_size = tud_cdc_n_read(CDCTypeGDB, gdb_buffer_rx, max_len);
 
         if(rx_size > 0) {
-            gdb_glue_receive(buffer_rx, rx_size);
+            gdb_glue_receive(gdb_buffer_rx, rx_size);
         }
     } else {
         esp_system_abort("No free space in GDB buffer");
+    }
+}
+
+void usb_cdc_uart_rx_callback(void) {
+    size_t max_len = gdb_glue_get_free_size();
+    if(max_len > UART_BUF_RX_SIZE) max_len = UART_BUF_RX_SIZE;
+    uint32_t rx_size = tud_cdc_n_read(CDCTypeUART, uart_buffer_rx, max_len);
+
+    if(rx_size > 0) {
+        usb_uart_write(uart_buffer_rx, rx_size);
     }
 }
 
@@ -66,30 +87,28 @@ void tud_cdc_rx_cb(uint8_t interface) {
         if(interface == CDCTypeGDB) {
             usb_cdc_gdb_rx_callback();
         } else if(interface == CDCTypeUART) {
+            usb_cdc_uart_rx_callback();
         } else {
             tud_cdc_n_read_flush(interface);
         }
     } while(false);
 }
 
-void tud_cdc_line_state_cb(uint8_t itf, bool dtr, bool rts) {
-    ESP_LOGI(TAG, "state[%d] dtr:%d, rts:%d", itf, dtr, rts);
+void tud_cdc_line_state_cb(uint8_t interface, bool dtr, bool rts) {
+    if(interface == CDCTypeUART) {
+        usb_uart_set_line_state(dtr, rts);
+    }
 }
 
-void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const* p_line_coding) {
+void tud_cdc_line_coding_cb(uint8_t interface, cdc_line_coding_t const* p_line_coding) {
     uint32_t bit_rate = p_line_coding->bit_rate;
     uint8_t stop_bits = p_line_coding->stop_bits;
     uint8_t parity = p_line_coding->parity;
     uint8_t data_bits = p_line_coding->data_bits;
 
-    ESP_LOGI(
-        TAG,
-        "coding[%d] bit_rate:%d, stop_bits:%d, parity:%d, data_bits:%d",
-        itf,
-        bit_rate,
-        stop_bits,
-        parity,
-        data_bits);
+    if(interface == CDCTypeUART) {
+        usb_uart_set_line_coding(bit_rate, stop_bits, parity, data_bits);
+    }
 }
 
 //--------------------------------------------------------------------+
@@ -153,6 +172,7 @@ static void usb_cdc_bus_reset() {
 
 void usb_cdc_init(void) {
     usb_cdc.connected = false;
+    usb_uart_init();
 
     ESP_LOGI(TAG, "init");
     usb_cdc_bus_reset();

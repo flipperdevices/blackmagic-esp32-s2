@@ -12,14 +12,13 @@
 #define CLI_UART_TXD_PIN (17)
 #define CLI_UART_RXD_PIN (18)
 #define CLI_UART_BAUD_RATE (115200)
-#define CLI_UART_BUF_SIZE (128)
 #define CLI_UART_TX_BUF_SIZE (64)
 #define CLI_UART_RX_BUF_SIZE (64)
 
 static Cli* cli_uart;
 static uint8_t uart_tx_buffer[CLI_UART_TX_BUF_SIZE];
 static size_t uart_tx_index = 0;
-StreamBufferHandle_t uart_rx_stream;
+static StreamBufferHandle_t uart_rx_stream;
 
 static void cli_uart_write(const uint8_t* data, size_t data_size, void* context);
 static void cli_uart_flush(void* context);
@@ -44,7 +43,7 @@ void cli_uart_init() {
     cli_set_write_cb(cli_uart, cli_uart_write);
     cli_set_flush_cb(cli_uart, cli_uart_flush);
 
-    uart_rx_stream = xStreamBufferCreate(CLI_UART_BUF_SIZE * 4, 1);
+    uart_rx_stream = xStreamBufferCreate(CLI_UART_RX_BUF_SIZE * 4, 1);
 
     xTaskCreate(cli_uart_rx_task, "cli_uart_rx", 4096, NULL, 5, NULL);
 
