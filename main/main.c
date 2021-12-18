@@ -16,6 +16,7 @@
 #include "network-gdb.h"
 
 #include <gdb-glue.h>
+#include <soft-uart-log.h>
 
 static const char* TAG = "main";
 
@@ -46,10 +47,10 @@ void pins_init() {
     gpio_config(&io_conf);
 }
 
-void tcp_uart_init(void);
-void tcp_web_log(void);
-
 void app_main(void) {
+    // Software UART logging at pin 7, 57600 baud 
+    soft_uart_log_init(7, 57600);
+
     ESP_LOGI(TAG, "start");
 
     gdb_glue_init();
@@ -60,11 +61,10 @@ void app_main(void) {
     nvs_init();
     network_init();
     network_http_server_init();
-    network_uart_server_init();
+    // network_uart_server_init();
     network_gdb_server_init();
 
     usb_cdc_init();
-
     cli_uart_init();
 
     // TODO uart and i2c share the same pins, need switching mechanics
