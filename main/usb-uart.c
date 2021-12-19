@@ -15,8 +15,6 @@
 #define USB_UART_RX_BUF_SIZE (64)
 
 static StreamBufferHandle_t uart_rx_stream;
-static uint8_t uart_tx_buffer[USB_UART_TX_BUF_SIZE];
-static size_t uart_tx_index = 0;
 
 static void usb_uart_rx_isr(void* context);
 static void usb_uart_rx_task(void* pvParameters);
