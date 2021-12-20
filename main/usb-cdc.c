@@ -171,11 +171,12 @@ static void usb_cdc_bus_reset() {
 }
 
 void usb_cdc_init(void) {
+    ESP_LOGI(TAG, "init");
+
     usb_cdc.connected = false;
     usb_uart_init();
-
-    ESP_LOGI(TAG, "init");
     usb_cdc_bus_reset();
     dual_cdc_driver_install();
+    
     ESP_LOGI(TAG, "init done");
 }

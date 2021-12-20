@@ -19,12 +19,16 @@ static StreamBufferHandle_t uart_rx_stream;
 static void usb_uart_rx_isr(void* context);
 static void usb_uart_rx_task(void* pvParameters);
 
+static const char* TAG = "usb-uart";
+
 void usb_uart_init() {
+    ESP_LOGI(TAG, "init");
+
     uart_rx_stream = xStreamBufferCreate(USB_UART_BUF_SIZE * 4, 1);
 
     xTaskCreate(usb_uart_rx_task, "usb_uart_rx", 4096, NULL, 5, NULL);
 
-    esp_log_level_set("*", ESP_LOG_NONE);
+    // esp_log_level_set("*", ESP_LOG_NONE);
 
     UartConfig config = {
         .uart_num = USB_UART_PORT_NUM,
@@ -41,6 +45,8 @@ void usb_uart_init() {
     simple_uart_init(&config);
 
     usb_uart_write((const uint8_t*)"Go", 2);
+
+    ESP_LOGI(TAG, "init done");
 }
 
 void usb_uart_write(const uint8_t* data, size_t data_size) {
