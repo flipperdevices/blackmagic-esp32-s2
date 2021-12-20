@@ -1,5 +1,6 @@
 #include <esp_log.h>
 #include <soft-uart.h>
+#include <freertos\portmacro.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -9,8 +10,13 @@ static SoftUart* log_uart = NULL;
 static char log_buffer[LOG_BUFFER_SIZE];
 
 static int soft_uart_log_vprintf(const char* str, va_list l) {
+    portMUX_TYPE myMutex = portMUX_INITIALIZER_UNLOCKED;
+    portENTER_CRITICAL(&myMutex);
+
     int len = vsnprintf(log_buffer, LOG_BUFFER_SIZE, str, l);
     soft_uart_transmit(log_uart, (uint8_t*)log_buffer, strlen(log_buffer));
+
+    portEXIT_CRITICAL(&myMutex);
     return len;
 }
 
