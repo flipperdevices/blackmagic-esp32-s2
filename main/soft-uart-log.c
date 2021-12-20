@@ -1,6 +1,6 @@
 #include <esp_log.h>
 #include <soft-uart.h>
-#include <freertos\portmacro.h>
+#include <freertos/FreeRTOS.h>
 #include <stdio.h>
 #include <string.h>
 
