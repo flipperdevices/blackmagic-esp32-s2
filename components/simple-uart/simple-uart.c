@@ -89,8 +89,28 @@ void simple_uart_init(UartConfig* cfg) {
         &uart_context[cfg->uart_num],
         NULL);
 
+    // disable interrupts
     uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_RXFIFO_FULL);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_TXFIFO_EMPTY);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_PARITY_ERR);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_FRAM_ERR);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_RXFIFO_OVF);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_DSR_CHG);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_CTS_CHG);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_BRK_DET);
     uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_RXFIFO_TOUT);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_SW_XON);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_SW_XOFF);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_GLITCH_DET);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_TX_BRK_DONE);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_TX_BRK_IDLE);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_TX_DONE);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_RS485_PARITY_ERR);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_RS485_FRM_ERR);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_RS485_CLASH);
+    uart_hal_clr_intsts_mask(UART_HAL(cfg->uart_num), UART_INTR_CMD_CHAR_DET);
+
+    // enable rx interrupts
     uart_hal_ena_intr_mask(UART_HAL(cfg->uart_num), UART_INTR_RXFIFO_FULL);
     uart_hal_ena_intr_mask(UART_HAL(cfg->uart_num), UART_INTR_RXFIFO_TOUT);
 }
@@ -137,6 +157,8 @@ static void simple_uart_isr(void* arg) {
     }
     uart_hal_clr_intsts_mask(hal_context, uart_intr_status);
 
+    if(uart_intr_status & UART_INTR_TXFIFO_EMPTY) {
+    }
     if((uart_intr_status & UART_INTR_RXFIFO_TOUT) || (uart_intr_status & UART_INTR_RXFIFO_FULL)) {
         if(context->rx_isr) {
             context->rx_isr(context->isr_context);
