@@ -11,141 +11,150 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/stream_buffer.h>
-#include <tinyusb.h>
-#include <tusb_cdc_acm.h>
 #include <sdkconfig.h>
 #include <driver/gpio.h>
 #include "usb-cdc.h"
+#include "usb-uart.h"
 #include "led.h"
 #include "delay.h"
 #include <gdb-glue.h>
+#include <dual-cdc-driver.h>
+#include <class/cdc/cdc_device.h>
 
 #define USB_DN_PIN (19)
 #define USB_DP_PIN (20)
-#define CDC_USB_DEV (TINYUSB_USBDEV_0)
+
+#define GDB_BUF_RX_SIZE 64
+#define UART_BUF_RX_SIZE 64
 
 static const char* TAG = "usb-cdc";
-static uint8_t buffer_rx[CONFIG_USB_CDC_RX_BUFSIZE];
+static uint8_t gdb_buffer_rx[GDB_BUF_RX_SIZE];
+static uint8_t uart_buffer_rx[UART_BUF_RX_SIZE];
 
 typedef struct {
     volatile bool connected;
-    volatile bool dtr;
-    volatile bool rts;
 } USBCDC;
 
 static USBCDC usb_cdc;
 
-void usb_cdc_tx_char(uint8_t c, bool flush) {
-    tinyusb_cdcacm_write_queue(CDC_USB_DEV, &c, 1);
+typedef enum {
+    CDCTypeGDB = 0,
+    CDCTypeUART = 1,
+} CDCType;
+
+static void usb_cdc_tx_char(CDCType type, uint8_t c, bool flush) {
+    tud_cdc_n_write(type, &c, 1);
 
     if(flush) {
-        // SOME GDB MAGIC
-        // We need to send an empty packet for some hosts to accept this as a complete transfer.
-        uint8_t zero_byte = 0;
-        tinyusb_cdcacm_write_queue(CDC_USB_DEV, &zero_byte, 1);
-
-        // TODO: timeout size
-        ESP_ERROR_CHECK_WITHOUT_ABORT(tinyusb_cdcacm_write_flush(CDC_USB_DEV, 1000));
+        tud_cdc_n_write_flush(type);
     }
 }
 
-void usb_cdc_rx_callback(int itf, cdcacm_event_t* event) {
+void usb_cdc_gdb_tx_char(uint8_t c, bool flush) {
+    usb_cdc_tx_char(CDCTypeGDB, c, flush);
+}
+
+void usb_cdc_uart_tx_char(uint8_t c, bool flush) {
+    usb_cdc_tx_char(CDCTypeUART, c, flush);
+}
+
+void usb_cdc_gdb_rx_callback(void) {
     if(gdb_glue_can_receive()) {
         size_t max_len = gdb_glue_get_free_size();
-        if(max_len > CONFIG_USB_CDC_RX_BUFSIZE) max_len = CONFIG_USB_CDC_RX_BUFSIZE;
-        size_t rx_size = 0;
-        esp_err_t err = tinyusb_cdcacm_read(itf, buffer_rx, max_len, &rx_size);
+        if(max_len > GDB_BUF_RX_SIZE) max_len = GDB_BUF_RX_SIZE;
+        uint32_t rx_size = tud_cdc_n_read(CDCTypeGDB, gdb_buffer_rx, max_len);
 
-        if(err == ESP_OK) {
-            if(rx_size > 0) {
-                gdb_glue_receive(buffer_rx, rx_size);
-            }
-        } else {
-            ESP_LOGE(TAG, "Read error");
+        if(rx_size > 0) {
+            gdb_glue_receive(gdb_buffer_rx, rx_size);
         }
+    } else {
+        esp_system_abort("No free space in GDB buffer");
     }
 }
 
-void usb_cdc_line_state_changed_callback(int itf, cdcacm_event_t* event) {
-    usb_cdc.dtr = event->line_state_changed_data.dtr;
-    usb_cdc.rts = event->line_state_changed_data.rts;
+void usb_cdc_uart_rx_callback(void) {
+    size_t max_len = gdb_glue_get_free_size();
+    if(max_len > UART_BUF_RX_SIZE) max_len = UART_BUF_RX_SIZE;
+    uint32_t rx_size = tud_cdc_n_read(CDCTypeUART, uart_buffer_rx, max_len);
 
-    ESP_LOGI(TAG, "Line state changed! dtr:%d, rst:%d", usb_cdc.dtr, usb_cdc.rts);
+    if(rx_size > 0) {
+        usb_uart_write(uart_buffer_rx, rx_size);
+    }
 }
 
-void usb_cdc_line_coding_changed_callback(int itf, cdcacm_event_t* event) {
-    uint32_t bit_rate = event->line_coding_changed_data.p_line_coding->bit_rate;
-    uint8_t stop_bits = event->line_coding_changed_data.p_line_coding->stop_bits;
-    uint8_t parity = event->line_coding_changed_data.p_line_coding->parity;
-    uint8_t data_bits = event->line_coding_changed_data.p_line_coding->data_bits;
+void tud_cdc_rx_cb(uint8_t interface) {
+    do {
+        if(interface == CDCTypeGDB) {
+            usb_cdc_gdb_rx_callback();
+        } else if(interface == CDCTypeUART) {
+            usb_cdc_uart_rx_callback();
+        } else {
+            tud_cdc_n_read_flush(interface);
+        }
+    } while(false);
+}
 
-    ESP_LOGI(
-        TAG,
-        "Line coding changed! bit_rate:%d, stop_bits:%d, parity:%d, data_bits:%d",
-        bit_rate,
-        stop_bits,
-        parity,
-        data_bits);
+void tud_cdc_line_state_cb(uint8_t interface, bool dtr, bool rts) {
+    if(interface == CDCTypeUART) {
+        usb_uart_set_line_state(dtr, rts);
+    }
+}
+
+void tud_cdc_line_coding_cb(uint8_t interface, cdc_line_coding_t const* p_line_coding) {
+    uint32_t bit_rate = p_line_coding->bit_rate;
+    uint8_t stop_bits = p_line_coding->stop_bits;
+    uint8_t parity = p_line_coding->parity;
+    uint8_t data_bits = p_line_coding->data_bits;
+
+    if(interface == CDCTypeUART) {
+        usb_uart_set_line_coding(bit_rate, stop_bits, parity, data_bits);
+    }
 }
 
 //--------------------------------------------------------------------+
 // Device callbacks
 //--------------------------------------------------------------------+
 
-// It seems like a reliable way is to rely on tud_mount_cb on connect and tud_suspend_cb on disconnect
-void tud_mount_cb(void) {
-    ESP_LOGI(TAG, "Mount");
+static void usb_cdc_event_blink(void) {
+    led_set_blue(255);
+    delay(10);
+    led_set_blue(0);
+}
 
+static void usb_cdc_to_connected(void) {
     if(!usb_cdc.connected) {
-        led_set_blue(255);
-        delay(10);
-        led_set_blue(0);
+        usb_cdc_event_blink();
+    }
+    usb_cdc.connected = true;
+    ESP_LOGI(TAG, "connect");
+}
+
+static void usb_cdc_from_connected(void) {
+    if(usb_cdc.connected) {
+        usb_cdc_event_blink();
     }
 
-    usb_cdc.connected = true;
+    usb_cdc.connected = false;
+    ESP_LOGI(TAG, "disconnect");
+}
+
+void tud_mount_cb(void) {
+    usb_cdc_to_connected();
 }
 
 void tud_umount_cb(void) {
-    ESP_LOGI(TAG, "Unmount");
-
-    if(usb_cdc.connected) {
-        led_set_blue(255);
-        delay(10);
-        led_set_blue(0);
-    }
-
-    usb_cdc.connected = false;
+    usb_cdc_from_connected();
 }
 
 void tud_resume_cb(void) {
-    ESP_LOGI(TAG, "Resume");
-
-    if(usb_cdc.connected) {
-        led_set_blue(255);
-        delay(10);
-        led_set_blue(0);
-    }
-
-    usb_cdc.connected = true;
+    usb_cdc_to_connected();
 }
 
 void tud_suspend_cb(bool remote_wakeup_en) {
-    ESP_LOGI(TAG, "Suspend");
-
-    if(usb_cdc.connected) {
-        led_set_blue(255);
-        delay(10);
-        led_set_blue(0);
-    }
-
-    usb_cdc.connected = false;
+    usb_cdc_from_connected();
 }
 
-void usb_cdc_init(void) {
-    usb_cdc.connected = false;
-
-    ESP_LOGI(TAG, "init");
-
+static void usb_cdc_bus_reset() {
     gpio_config_t io_conf;
     io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT_OD;
@@ -159,25 +168,15 @@ void usb_cdc_init(void) {
     delay(100);
     gpio_set_level(USB_DN_PIN, 1);
     gpio_set_level(USB_DP_PIN, 1);
+}
 
-    tinyusb_config_t tusb_cfg = {
-        .descriptor = NULL, //Uses default descriptor specified in Menuconfig
-        .string_descriptor = NULL, //Uses default string specified in Menuconfig
-        .external_phy = false,
-    };
+void usb_cdc_init(void) {
+    ESP_LOGI(TAG, "init");
 
-    ESP_ERROR_CHECK(tinyusb_driver_install(&tusb_cfg));
-
-    tinyusb_config_cdcacm_t amc_cfg = {
-        .usb_dev = CDC_USB_DEV,
-        .cdc_port = TINYUSB_CDC_ACM_0,
-        .rx_unread_buf_sz = 64,
-        .callback_rx = &usb_cdc_rx_callback,
-        .callback_rx_wanted_char = NULL,
-        .callback_line_state_changed = &usb_cdc_line_state_changed_callback,
-        .callback_line_coding_changed = &usb_cdc_line_coding_changed_callback};
-
-    ESP_ERROR_CHECK(tusb_cdc_acm_init(&amc_cfg));
-
+    usb_cdc.connected = false;
+    usb_uart_init();
+    usb_cdc_bus_reset();
+    dual_cdc_driver_install();
+    
     ESP_LOGI(TAG, "init done");
 }

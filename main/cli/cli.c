@@ -96,11 +96,42 @@ void cli_printf(Cli* cli, char* format, ...) {
 }
 
 static void cli_write_motd(Cli* cli) {
-    cli_write_str(cli, "Hello!\r\nThis is MOTD\r\n");
+    cli_write_str(cli, "                          \r\n");
+    cli_write_str(cli, "         ____       BLACK \r\n");
+    cli_write_str(cli, "        /   /\\      MAGIC \r\n");
+    cli_write_str(cli, "       /   /\\ \\          \r\n");
+    cli_write_str(cli, "      (   /  \\ \\     '   \r\n");
+    cli_write_str(cli, "     _/  (___/ /_    . '  \r\n");
+    cli_write_str(cli, "    ( _____._.__ )   ,'o  \r\n");
+    cli_write_str(cli, "    //  /  'o'  |    O .  \r\n");
+    cli_write_str(cli, "   //  /  '   ' |\\   ,,,  \r\n");
+    cli_write_str(cli, "  //  /\\ '     '| \\_/''/  \r\n");
+    cli_write_str(cli, " //  /  )______/\\   \\_/   \r\n");
+    cli_write_str(cli, "//   \\ (       ) `---'    \r\n");
+    cli_write_str(cli, "\\\\___/  |      \\          \r\n");
+    cli_write_str(cli, " \\(  \\  |       \\         \r\n");
+    cli_write_str(cli, " / \\_@  |        )        \r\n");
+    cli_write_str(cli, " \\    , |        \\        \r\n");
+    cli_write_str(cli, " / / /  |        /        \r\n");
+    cli_write_str(cli, " \\ \\    :    /\\ /         \r\n");
+    cli_write_str(cli, "  \\ \\ \\  :  / |\\)         \r\n");
+    cli_write_str(cli, "   \\  /  |\\/| |           \r\n");
+    cli_write_str(cli, "   / /   |  |-            \r\n");
+    cli_write_str(cli, "   \\    /|__|             \r\n");
+    cli_write_str(cli, "    \\  / |''|             \r\n");
+    cli_write_str(cli, "     \\ \\  --              \r\n");
+    cli_write_str(cli, "      \\/                  \r\n");
 }
 
 static void cli_write_prompt(Cli* cli) {
     cli_write_str(cli, ">: ");
+}
+
+void cli_force_motd(Cli* cli) {
+    cli_write_motd(cli);
+    cli_write_eol(cli);
+    cli_write_prompt(cli);
+    cli_flush(cli);
 }
 
 static const CliItem* cli_search_item(Cli* cli, const mstring_t* command) {
@@ -199,9 +230,7 @@ void cli_handle_char(Cli* cli, uint8_t c) {
             break;
         case CliSymbolAsciiSOH:
             delay(33);
-            cli_write_motd(cli);
-            cli_write_eol(cli);
-            cli_write_prompt(cli);
+            cli_force_motd(cli);
             break;
         case CliSymbolAsciiETX:
             cli_reset(cli);

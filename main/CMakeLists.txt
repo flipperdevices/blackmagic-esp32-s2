@@ -1,6 +1,7 @@
 set(SOURCES 
     "main.c"
     "usb-cdc.c"
+    "usb-uart.c"
     "nvs.c"
     "nvs-config.c"
     "led.c"
@@ -9,16 +10,16 @@ set(SOURCES
     "delay.c"
     "network.c"
     "network-http.c"
-    "network-uart.c"
     "network-gdb.c"
-    "cli.c"
     "cli-uart.c"
-    "cli-commands.c"
-    "cli-commands-gpio.c"
-    "cli-commands-wifi.c"
-    "cli-commands-config.c"
-    "cli-commands-device-info.c"
-    "cli-args.c"
+    "cli/cli.c"
+    "cli/cli-commands.c"
+    "cli/cli-commands-gpio.c"
+    "cli/cli-commands-wifi.c"
+    "cli/cli-commands-config.c"
+    "cli/cli-commands-device-info.c"
+    "cli/cli-args.c"
+    "soft-uart-log.c"
 )
 
 set(INCLUDES 
@@ -74,4 +75,4 @@ message(STATUS "FW branch: ${FW_GIT_BRANCH}")
 message(STATUS "FW branch num: ${FW_GIT_BRANCH_NUM}")
 message(STATUS "FW version: ${FW_GIT_VERSION}")
 
-set_property(SOURCE "cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS ${INFO_FLAGS})
+set_property(SOURCE "cli/cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS ${INFO_FLAGS})
