@@ -20,7 +20,7 @@ set(SOURCES
     "cli/cli-commands-device-info.c"
     "cli/cli-args.c"
     "soft-uart-log.c"
-    "reset-service.c"
+    "factory-reset-service.c"
 )
 
 set(INCLUDES 

@@ -13,17 +13,17 @@
 #define RESET_TIMER_TICKS_TO_RESET 40
 
 // static timer
-static StaticTimer_t reset_tmdef;
-static TimerHandle_t reset_tm;
+static StaticTimer_t reset_timer_data;
+static TimerHandle_t reset_timer;
 static size_t reset_counter = 0;
 
-static void start_timer() {
+static void start_reset_timer() {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
     if(xPortInIsrContext()) {
-        xTimerStartFromISR(reset_tm, &xHigherPriorityTaskWoken);
+        xTimerStartFromISR(reset_timer, &xHigherPriorityTaskWoken);
     } else {
-        xTimerStart(reset_tm, portMAX_DELAY);
+        xTimerStart(reset_timer, portMAX_DELAY);
     }
 
     if(xHigherPriorityTaskWoken != pdFALSE) {
@@ -31,13 +31,13 @@ static void start_timer() {
     }
 }
 
-static void stop_timer() {
+static void stop_reset_timer() {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
     if(xPortInIsrContext()) {
-        xTimerStopFromISR(reset_tm, &xHigherPriorityTaskWoken);
+        xTimerStopFromISR(reset_timer, &xHigherPriorityTaskWoken);
     } else {
-        xTimerStop(reset_tm, portMAX_DELAY);
+        xTimerStop(reset_timer, portMAX_DELAY);
     }
 
     reset_counter = 0;
@@ -48,23 +48,19 @@ static void stop_timer() {
     }
 }
 
-static void IRAM_ATTR gpio_isr_handler(void* arg) {
-    // uint32_t gpio_num = (uint32_t)arg;
-    // xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
-    // ESP_LOGI("isr", "test");
-
+static void IRAM_ATTR boot_button_isr_handler(void* arg) {
     if(gpio_get_level(BOOT_PIN) == 0) {
-        start_timer();
+        start_reset_timer();
     } else {
-        stop_timer();
+        stop_reset_timer();
     }
 }
 
-static void reset_tm_cb(TimerHandle_t xTimer) {
+static void reset_timer_cb(TimerHandle_t xTimer) {
     (void)xTimer;
 
     if(gpio_get_level(BOOT_PIN) == 1) {
-        stop_timer();
+        stop_reset_timer();
     } else {
         reset_counter++;
 
@@ -82,7 +78,7 @@ static void reset_tm_cb(TimerHandle_t xTimer) {
         }
 
         if(reset_counter > RESET_TIMER_TICKS_TO_RESET) {
-            stop_timer();
+            stop_reset_timer();
 
             led_set(255, 0, 0);
 
@@ -101,7 +97,7 @@ static void reset_tm_cb(TimerHandle_t xTimer) {
     }
 }
 
-void reset_service_init(void) {
+void factory_reset_service_init(void) {
     gpio_config_t io_conf;
     memset(&io_conf, 0, sizeof(gpio_config_t));
 
@@ -115,9 +111,9 @@ void reset_service_init(void) {
     // install gpio isr service
     gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
     // attach interrupt
-    gpio_isr_handler_add(BOOT_PIN, gpio_isr_handler, (void*)BOOT_PIN);
+    gpio_isr_handler_add(BOOT_PIN, boot_button_isr_handler, (void*)BOOT_PIN);
 
     // soft timers
-    reset_tm = xTimerCreateStatic(
-        NULL, pdMS_TO_TICKS(RESET_TIMER_TICK), true, NULL, reset_tm_cb, &reset_tmdef);
+    reset_timer = xTimerCreateStatic(
+        NULL, pdMS_TO_TICKS(RESET_TIMER_TICK), true, NULL, reset_timer_cb, &reset_timer_data);
 }

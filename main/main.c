@@ -14,7 +14,7 @@
 #include "network-http.h"
 #include "network-uart.h"
 #include "network-gdb.h"
-#include "reset-service.h"
+#include "factory-reset-service.h"
 
 #include <gdb-glue.h>
 #include <soft-uart-log.h>
@@ -54,7 +54,7 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "start");
 
-    reset_service_init();
+    factory_reset_service_init();
 
     gdb_glue_init();
 
