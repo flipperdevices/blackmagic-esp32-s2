@@ -14,6 +14,7 @@
 #include "network-http.h"
 #include "network-uart.h"
 #include "network-gdb.h"
+#include "factory-reset-service.h"
 
 #include <gdb-glue.h>
 #include <soft-uart-log.h>
@@ -48,10 +49,12 @@ void pins_init() {
 }
 
 void app_main(void) {
-    // Software UART logging at pin 7, 57600 baud 
+    // Software UART logging at pin 7, 57600 baud
     soft_uart_log_init(7, 57600);
 
     ESP_LOGI(TAG, "start");
+
+    factory_reset_service_init();
 
     gdb_glue_init();
 
