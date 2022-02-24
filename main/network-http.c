@@ -229,6 +229,12 @@ static esp_err_t system_tasks_handler(httpd_req_t* req) {
     return ESP_OK;
 }
 
+static esp_err_t system_reboot(httpd_req_t* req) {
+    httpd_resp_sendstr(req, JSON_RESULT("OK"));
+    esp_restart();
+    return ESP_OK;
+}
+
 static esp_err_t system_info_get_handler(httpd_req_t* req) {
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_set_type(req, "application/json");
@@ -578,6 +584,11 @@ const httpd_uri_t uri_handlers[] = {
     {.uri = "/api/v1/system/info",
      .method = HTTP_GET,
      .handler = system_info_get_handler,
+     .user_ctx = NULL},
+
+    {.uri = "/api/v1/system/reboot",
+     .method = HTTP_POST,
+     .handler = system_reboot,
      .user_ctx = NULL},
 
     /*************** GPIO ***************/

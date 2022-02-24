@@ -65,6 +65,12 @@
     });
   }
 
+  async function reboot_board() {
+    api_post(server + "/api/v1/system/reboot", {});
+    popup_message_text = "Rebooted";
+    popup_message.show();
+  }
+
   function change_tab(tab) {
     current_tab = tab;
     localStorage.setItem("current_tab", current_tab);
@@ -184,6 +190,7 @@
         </div>
         <div style="margin-top: 10px;">
           <Button value="SAVE" on:click={save_settings} />
+          <Button value="REBOOT" on:click={reboot_board} />
         </div>
       </tab-content>
     {/if}
