@@ -28,8 +28,6 @@ void usb_uart_init() {
 
     xTaskCreate(usb_uart_rx_task, "usb_uart_rx", 4096, NULL, 5, NULL);
 
-    // esp_log_level_set("*", ESP_LOG_NONE);
-
     UartConfig config = {
         .uart_num = USB_UART_PORT_NUM,
         .baud_rate = USB_UART_BAUD_RATE,
@@ -50,16 +48,6 @@ void usb_uart_init() {
 }
 
 void usb_uart_write(const uint8_t* data, size_t data_size) {
-    /*for(size_t i = 0; i < data_size; i++) {
-        uart_tx_buffer[uart_tx_index] = data[i];
-        uart_tx_index++;
-
-        if(uart_tx_index == USB_UART_TX_BUF_SIZE) {
-            //cli_uart_flush(NULL);
-
-        }
-    }*/
-
     simple_uart_write(USB_UART_PORT_NUM, data, data_size);
 }
 
@@ -159,9 +147,8 @@ static void usb_uart_rx_isr(void* context) {
         simple_uart_read(USB_UART_PORT_NUM, &data, 1);
 
         size_t ret __attribute__((unused));
-        ret = xStreamBufferSendFromISR(stream, &data, 1, &xHigherPriorityTaskWoken);
         // we will drop data if the stream overflows
-        // ESP_ERROR_CHECK(ret != 1);
+        ret = xStreamBufferSendFromISR(stream, &data, 1, &xHigherPriorityTaskWoken);
     }
 
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
