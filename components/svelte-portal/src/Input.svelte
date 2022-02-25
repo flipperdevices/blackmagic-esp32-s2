@@ -16,6 +16,9 @@
 </script>
 
 <input
+  autocorrect="off"
+  autocapitalize="none"
+  autocomplete="off"
   type="text"
   {value}
   class="input-text-css"

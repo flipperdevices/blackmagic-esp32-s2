@@ -159,7 +159,7 @@
             </div>
 
             <div class="value-name">STA</div>
-            <div>(connect to WiFi)</div>
+            <div>(join another network)</div>
             <div class="value-name">SSID:</div>
             <div>
               <Input
@@ -174,7 +174,7 @@
             </div>
 
             <div class="value-name">AP</div>
-            <div>(make own WiFi AP)</div>
+            <div>(own access point)</div>
             <div class="value-name">SSID:</div>
             <div>
               <Input value={json.ap_ssid} bind:this={ap_ssid_input} />
@@ -291,6 +291,7 @@
     margin: 10px auto;
     padding: 10px;
     max-width: 800px;
+    overflow: hidden;
   }
 
   * {
