@@ -50,7 +50,7 @@
     popup_message_text = "";
     popup_message.show();
 
-    await api_post(server + "/api/v1/wifi/set_credenitals", {
+    await api_post(server + "/api/v1/wifi/set_credentials", {
       wifi_mode: mode_select.get_value(),
       ap_ssid: ap_ssid_input.get_value(),
       ap_pass: ap_pass_input.get_value(),
@@ -134,7 +134,7 @@
     {#if current_tab == "WiFi"}
       <tab-content>
         <div class="grid">
-          {#await api_get(server + "/api/v1/wifi/get_credenitals")}
+          {#await api_get(server + "/api/v1/wifi/get_credentials")}
             <div class="value-name">Mode:</div>
             <div><Spinner /></div>
             <div class="value-name">SSID:</div>

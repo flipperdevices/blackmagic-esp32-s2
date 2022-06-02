@@ -296,7 +296,7 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
     return ESP_OK;
 }
 
-static esp_err_t wifi_get_credenitals_handler(httpd_req_t* req) {
+static esp_err_t wifi_get_credentials_handler(httpd_req_t* req) {
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_set_type(req, "application/json");
     cJSON* root = cJSON_CreateObject();
@@ -338,7 +338,7 @@ static esp_err_t wifi_get_credenitals_handler(httpd_req_t* req) {
     return ESP_OK;
 }
 
-static esp_err_t wifi_set_credenitals_handler(httpd_req_t* req) {
+static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     int total_length = req->content_len;
     int cur_len = 0;
@@ -605,14 +605,14 @@ const httpd_uri_t uri_handlers[] = {
      .handler = wifi_list_get_handler,
      .user_ctx = NULL},
 
-    {.uri = "/api/v1/wifi/set_credenitals",
+    {.uri = "/api/v1/wifi/set_credentials",
      .method = HTTP_POST,
-     .handler = wifi_set_credenitals_handler,
+     .handler = wifi_set_credentials_handler,
      .user_ctx = NULL},
 
-    {.uri = "/api/v1/wifi/get_credenitals",
+    {.uri = "/api/v1/wifi/get_credentials",
      .method = HTTP_GET,
-     .handler = wifi_get_credenitals_handler,
+     .handler = wifi_get_credentials_handler,
      .user_ctx = NULL},
 
     /*************** HTTP ***************/
