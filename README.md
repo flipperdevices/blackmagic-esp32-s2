@@ -40,3 +40,7 @@ idf.py -p <port> monitor
 ```
 
 You should not see errors in the logs if the firmware is installed and running correctly. 
+
+## Schematic
+
+[Altium Live Schematic](https://kernel-viewer-cdn1.365.altium.com/71/client/index.html?feature=embed&source=6B62619E-E72F-44F7-BA3B-299EEE73CB9E&activeView=SCH)
