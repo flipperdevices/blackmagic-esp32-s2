@@ -43,4 +43,4 @@ You should not see errors in the logs if the firmware is installed and running c
 
 ## Schematic
 
-[Altium Live Schematic](https://kernel-viewer-cdn1.365.altium.com/71/client/index.html?feature=embed&source=8082BDF5-B466-4FD6-8586-FB3DD4B2CB66&activeView=SCH)
+[Altium Live Schematic](https://kernel-viewer-cdn1.365.altium.com/72/client/index.html?feature=embed&source=8082BDF5-B466-4FD6-8586-FB3DD4B2CB66&activeView=SCH)
