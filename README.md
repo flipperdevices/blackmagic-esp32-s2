@@ -43,4 +43,4 @@ You should not see errors in the logs if the firmware is installed and running c
 
 ## Schematic
 
-[Altium Live Schematic](https://kernel-viewer-cdn1.365.altium.com/72/client/index.html?feature=embed&source=8082BDF5-B466-4FD6-8586-FB3DD4B2CB66&activeView=SCH)
+[Flipper Zero Wi-Fi Module Schematic](https://cdn.flipperzero.one/Flipper_Zero_WI-FI_Module_V1_Schematic.PDF)
