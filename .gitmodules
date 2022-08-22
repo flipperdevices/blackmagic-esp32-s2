@@ -7,3 +7,13 @@
 [submodule "components/tinyusb/tinyusb"]
 	path = components/tinyusb/tinyusb
 	url = https://github.com/hathach/tinyusb
+[submodule "components/apa102"]
+	path = components/apa102
+	url = https://github.com/MisterRager/ESP32_APA102
+[submodule "apa102"]
+	url = https://github.com/litui/ESP32_APA102
+[submodule "apa102/"]
+	branch = updates-for-4.4
+[submodule "components/esp-idf-dotstar-led-lib"]
+	path = components/esp-idf-dotstar-led-lib
+	url = https://github.com/sahilkhanna/esp-idf-dotstar-led-lib
