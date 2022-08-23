@@ -28,61 +28,47 @@ static const GPIOItem gpio_items[] = {
     MAKE_IO_READONLY(0),
     MAKE_IO_NAMED_READONLY("BOOT", 0),
     // SWD
-    MAKE_IO(1),
-    MAKE_IO_NAMED("SWCLK", 1),
-    MAKE_IO(2),
-    MAKE_IO_NAMED("SWDIO", 2),
-    // I2C_PULL_UP
-    MAKE_IO(3),
-    MAKE_IO_NAMED("I2C_PULL_UP", 3),
-    // I2C_PULL_UP
-    MAKE_IO(4),
-    MAKE_IO_NAMED("LED_BLUE", 4),
-    MAKE_IO(5),
-    MAKE_IO_NAMED("LED_GREEN", 5),
-    MAKE_IO(6),
-    MAKE_IO_NAMED("LED_RED", 6),
-    // GPIO
-    MAKE_IO(7),
-    MAKE_IO(8),
-    MAKE_IO(9),
-    // SPI
-    MAKE_IO(10),
-    MAKE_IO_NAMED("SWO", 10),
-    MAKE_IO_NAMED("SPI_CS", 10),
-    MAKE_IO(11),
-    MAKE_IO_NAMED("SPI_MOSI", 11),
-    MAKE_IO(12),
-    MAKE_IO_NAMED("SPI_CLK", 12),
-    MAKE_IO(13),
-    MAKE_IO_NAMED("SPI_MISO", 13),
-    // GPIO
-    MAKE_IO(14),
     MAKE_IO(15),
-    MAKE_IO(16),
-    // CLI UART
-    MAKE_IO(17),
-    MAKE_IO_NAMED("CLI_TXD", 17),
+    MAKE_IO_NAMED("SWCLK", 15),
+    MAKE_IO(27),
+    MAKE_IO_NAMED("SWDIO", 27),
+    // DotStar APA102 LED
+    MAKE_IO(2),
+    MAKE_IO_NAMED("LED_DATA", 3),
+    MAKE_IO(12),
+    MAKE_IO_NAMED("LED_CLK", 12),
+    MAKE_IO(13),
+    MAKE_IO_NAMED("LED_POWER", 13),
+    // UART
+    MAKE_IO(4),
+    MAKE_IO_NAMED("CLI_TXD", 4),
+    MAKE_IO(14),
+    MAKE_IO_NAMED("CLI_RXD", 14),
+    // SPI
+    MAKE_IO(5),
+    MAKE_IO_NAMED("SWO", 5),
+    MAKE_IO_NAMED("SPI_CS", 5),
     MAKE_IO(18),
-    MAKE_IO_NAMED("CLI_RXD", 18),
-    // GPIO
+    MAKE_IO_NAMED("SPI_CLK", 18),
+    MAKE_IO(19),
+    MAKE_IO_NAMED("SPI_MISO", 19),
+    MAKE_IO(23),
+    MAKE_IO_NAMED("SPI_MOSI", 23),
+    // I2C
     MAKE_IO(21),
+    MAKE_IO_NAMED("I2C_SDA", 21),
+    MAKE_IO(22),
+    MAKE_IO_NAMED("I2C_SCL", 22),
+    // GPIO
+    MAKE_IO(25),
+    MAKE_IO(26),
+    MAKE_IO(32),
     MAKE_IO(33),
+    // Battery
     MAKE_IO(34),
+    MAKE_IO_NAMED("VBAT_VOLTAGE", 34),
     MAKE_IO(35),
-    MAKE_IO(36),
-    MAKE_IO(37),
-    // JTAG
-    MAKE_IO(38),
-    MAKE_IO_NAMED("JTAG_SRST", 38),
-    MAKE_IO(39),
-    MAKE_IO_NAMED("JTAG_TCK", 39),
-    MAKE_IO(40),
-    MAKE_IO_NAMED("JTAG_TDI", 40),
-    MAKE_IO(41),
-    MAKE_IO_NAMED("JTAG_TDO", 41),
-    MAKE_IO(42),
-    MAKE_IO_NAMED("JTAG_TMS", 41),
+    MAKE_IO_NAMED("VBAT_STATE", 35),
 };
 
 static void cli_gpio_print_list_set(Cli* cli) {

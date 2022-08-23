@@ -1,5 +1,8 @@
 #pragma once
 #include <stdint.h>
+#include "dotstar.h"
+
+// Implement the same functions as led.h only use 
 
 void led_init();
 

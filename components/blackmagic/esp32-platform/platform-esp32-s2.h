@@ -14,7 +14,7 @@ void led_set_red(uint8_t value);
 void led_set_green(uint8_t value);
 void led_set_blue(uint8_t value);
 
-#define PLATFORM_IDENT "ESP32"
+#define PLATFORM_IDENT "ESP32-S2"
 
 #define NO_USB_PLEASE
 

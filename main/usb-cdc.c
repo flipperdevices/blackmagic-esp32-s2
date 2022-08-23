@@ -15,7 +15,7 @@
 #include <driver/gpio.h>
 #include "usb-cdc.h"
 #include "usb-uart.h"
-#include "led.h"
+#include "led-dotstar.h"
 #include "delay.h"
 #include <gdb-glue.h>
 #include <dual-cdc-driver.h>

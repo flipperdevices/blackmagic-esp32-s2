@@ -1,7 +1,7 @@
 // #include <driver/uart.h>
 // #include <driver/gpio.h>
 #include <string.h>
-#include "led.h"
+#include "led-dotstar.h"
 #include "cli/cli.h"
 #include <simple-uart.h>
 #include <freertos/FreeRTOS.h>
@@ -9,8 +9,8 @@
 #include <freertos/stream_buffer.h>
 
 #define CLI_UART_PORT_NUM UART_NUM_1
-#define CLI_UART_TXD_PIN (17)
-#define CLI_UART_RXD_PIN (18)
+#define CLI_UART_TXD_PIN (4)
+#define CLI_UART_RXD_PIN (14)
 #define CLI_UART_BAUD_RATE (115200)
 #define CLI_UART_TX_BUF_SIZE (64)
 #define CLI_UART_RX_BUF_SIZE (64)

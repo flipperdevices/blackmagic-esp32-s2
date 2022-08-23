@@ -94,6 +94,6 @@ void gdb_if_putchar(unsigned char c, int flush) {
         }
     } else {
         // Not sure why, but I could not get it to work with buffer
-        usb_cdc_gdb_tx_char(c, flush);
+        // usb_cdc_gdb_tx_char(c, flush);
     }
 }

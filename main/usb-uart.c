@@ -3,12 +3,12 @@
 #include <freertos/task.h>
 #include <freertos/stream_buffer.h>
 #include <esp_log.h>
-#include "usb-cdc.h"
+// #include "usb-cdc.h"
 #include "usb-uart.h"
 
 #define USB_UART_PORT_NUM UART_NUM_0
-#define USB_UART_TXD_PIN (43)
-#define USB_UART_RXD_PIN (44)
+#define USB_UART_TXD_PIN (1)
+#define USB_UART_RXD_PIN (3)
 #define USB_UART_BAUD_RATE (115200)
 #define USB_UART_BUF_SIZE (128)
 #define USB_UART_TX_BUF_SIZE (64)

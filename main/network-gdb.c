@@ -15,7 +15,7 @@
 #include <lwip/sys.h>
 #include <lwip/netdb.h>
 
-#include "led.h"
+#include "led-dotstar.h"
 #include "delay.h"
 #include "network-gdb.h"
 #include <gdb-glue.h>

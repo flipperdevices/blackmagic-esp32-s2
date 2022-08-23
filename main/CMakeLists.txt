@@ -1,10 +1,11 @@
 set(SOURCES 
     "main.c"
-    "usb-cdc.c"
+    # "usb-cdc.c"
     "usb-uart.c"
     "nvs.c"
     "nvs-config.c"
-    "led.c"
+    # "led.c"
+    "led-dotstar.c"
     "cli-uart.c"
     "i2c.c"
     "delay.c"

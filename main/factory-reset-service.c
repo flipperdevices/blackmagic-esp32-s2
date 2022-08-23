@@ -3,7 +3,7 @@
 #include <esp_log.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
-#include "led.h"
+#include "led-dotstar.h"
 #include "nvs.h"
 
 #define BOOT_PIN (0)

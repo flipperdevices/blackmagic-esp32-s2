@@ -14,6 +14,7 @@
 
 #define UART_NUM_0 (0) /*!< UART port 0 */
 #define UART_NUM_1 (1) /*!< UART port 1 */
+#define UART_NUM_2 (2) /*!< UART port 2 */
 #define UART_NUM_MAX (SOC_UART_NUM)
 
 typedef void (*uart_isr)(void* context);

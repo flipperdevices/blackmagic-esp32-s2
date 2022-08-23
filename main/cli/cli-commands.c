@@ -3,7 +3,7 @@
 #include <string.h>
 #include <esp_system.h>
 #include "cli.h"
-#include "led.h"
+#include "led-dotstar.h"
 #include "nvs.h"
 #include "helpers.h"
 #include "cli-args.h"

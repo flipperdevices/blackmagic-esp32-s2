@@ -8,7 +8,7 @@
 #include "network.h"
 #include "nvs.h"
 #include "nvs-config.h"
-#include "led.h"
+#include "led-dotstar.h"
 #include "helpers.h"
 
 #define TAG "network-http"
