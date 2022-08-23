@@ -1,6 +1,12 @@
-# Black Magic Probe for ESP32-S2
+# Black Magic Probe for Unexpected Maker (ESP32) TinyPico
 
-WiFi/USB capable version of the famous Black Magic Probe debugger.
+(for use with the Flipper Zero)
+
+## Known issues:
+
+* LED lights up but won't change colours. Low priority.
+* Haven't yet tested GDB out. Working on it.
+* USB serial isn't working (the S2 used USB-CDC, but TinyPico uses a USB-UART)
 
 # Clone the Repository
 
