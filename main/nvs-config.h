@@ -24,9 +24,11 @@ esp_err_t nvs_config_set_ap_ssid(const mstring_t* ssid);
 esp_err_t nvs_config_set_ap_pass(const mstring_t* pass);
 esp_err_t nvs_config_set_sta_ssid(const mstring_t* ssid);
 esp_err_t nvs_config_set_sta_pass(const mstring_t* pass);
+esp_err_t nvs_config_set_hostname(const mstring_t* hostname);
 
 esp_err_t nvs_config_get_wifi_mode(WiFiMode* value);
 esp_err_t nvs_config_get_ap_ssid(mstring_t* ssid);
 esp_err_t nvs_config_get_ap_pass(mstring_t* pass);
 esp_err_t nvs_config_get_sta_ssid(mstring_t* ssid);
 esp_err_t nvs_config_get_sta_pass(mstring_t* pass);
+esp_err_t nvs_config_get_hostname(mstring_t* hostname);
