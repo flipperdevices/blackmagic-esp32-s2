@@ -305,6 +305,7 @@ static esp_err_t wifi_get_credentials_handler(httpd_req_t* req) {
     mstring_t* ap_pass = mstring_alloc();
     mstring_t* sta_ssid = mstring_alloc();
     mstring_t* sta_pass = mstring_alloc();
+    mstring_t* hostname = mstring_alloc();
     WiFiMode wifi_mode;
 
     nvs_config_get_wifi_mode(&wifi_mode);
@@ -312,11 +313,13 @@ static esp_err_t wifi_get_credentials_handler(httpd_req_t* req) {
     nvs_config_get_ap_pass(ap_pass);
     nvs_config_get_sta_ssid(sta_ssid);
     nvs_config_get_sta_pass(sta_pass);
+    nvs_config_get_hostname(hostname);
 
     cJSON_AddStringToObject(root, "ap_ssid", mstring_get_cstr(ap_ssid));
     cJSON_AddStringToObject(root, "ap_pass", mstring_get_cstr(ap_pass));
     cJSON_AddStringToObject(root, "sta_ssid", mstring_get_cstr(sta_ssid));
     cJSON_AddStringToObject(root, "sta_pass", mstring_get_cstr(sta_pass));
+    cJSON_AddStringToObject(root, "hostname", mstring_get_cstr(hostname));
 
     switch(wifi_mode) {
     case WiFiModeAP:
@@ -335,6 +338,7 @@ static esp_err_t wifi_get_credentials_handler(httpd_req_t* req) {
     mstring_free(ap_pass);
     mstring_free(sta_ssid);
     mstring_free(sta_pass);
+    mstring_free(hostname);
     return ESP_OK;
 }
 
@@ -348,6 +352,7 @@ static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
     mstring_t* sta_ssid = mstring_alloc();
     mstring_t* sta_pass = mstring_alloc();
     mstring_t* wifi_mode = mstring_alloc();
+    mstring_t* hostname = mstring_alloc();
     const char* error_text = JSON_ERROR("unknown error");
     int received = 0;
     httpd_resp_set_type(req, "application/json");
@@ -407,6 +412,14 @@ static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
         error_text = JSON_ERROR("request dont have [wifi_mode] field");
         goto err_fail;
     }
+
+    if(cJSON_GetObjectItem(root, "hostname") != NULL) {
+        mstring_set(hostname, cJSON_GetObjectItem(root, "hostname")->valuestring);
+    } else {
+        cJSON_Delete(root);
+        error_text = JSON_ERROR("request dont have [hostname] field");
+        goto err_fail;
+    }
     cJSON_Delete(root);
 
     if(strcmp(mstring_get_cstr(wifi_mode), CFG_WIFI_MODE_AP) != 0 &&
@@ -444,7 +457,19 @@ static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
         }
     }
 
+    if(nvs_config_set_hostname(hostname) != ESP_OK) {
+        error_text = JSON_ERROR("invalid value in [hostname]");
+        goto err_fail;
+    }
+
     httpd_resp_sendstr(req, JSON_RESULT("WIFI settings saved"));
+    free(buffer);
+    mstring_free(ap_ssid);
+    mstring_free(ap_pass);
+    mstring_free(sta_ssid);
+    mstring_free(sta_pass);
+    mstring_free(wifi_mode);
+    mstring_free(hostname);
     return ESP_OK;
 
 err_fail:
@@ -455,6 +480,7 @@ err_fail:
     mstring_free(sta_ssid);
     mstring_free(sta_pass);
     mstring_free(wifi_mode);
+    mstring_free(hostname);
     return ESP_FAIL;
 }
 
@@ -559,6 +585,7 @@ static esp_err_t gpio_led_set_handler(httpd_req_t* req) {
     }
 
     httpd_resp_sendstr(req, JSON_RESULT("OK"));
+    free(buffer);
     return ESP_OK;
 
 err_fail:
