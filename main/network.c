@@ -152,9 +152,13 @@ static bool network_connect_ap(mstring_t* ap_ssid, mstring_t* ap_pass) {
 }
 
 void network_post_init(void) {
+    mstring_t* hostname = mstring_alloc();
+
     ESP_LOGI(TAG, "init mdns");
     mdns_init();
-    mdns_hostname_set(MDNS_HOST_NAME);
+
+    nvs_config_get_hostname(hostname);
+    mdns_hostname_set(mstring_get_cstr(hostname));
     mdns_instance_name_set(MDNS_INSTANCE);
 
     mdns_txt_item_t serviceTxtData[] = {{"board", "esp32"}, {"path", "/"}};
@@ -171,8 +175,10 @@ void network_post_init(void) {
 
     ESP_LOGI(TAG, "init netbios");
     netbiosns_init();
-    netbiosns_set_name(MDNS_HOST_NAME);
+    netbiosns_set_name(mstring_get_cstr(hostname));
     ESP_LOGI(TAG, "init netbios done");
+
+    mstring_free(hostname);
 }
 
 WiFiMode network_init(void) {

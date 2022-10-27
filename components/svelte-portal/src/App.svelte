@@ -40,6 +40,7 @@
   let ap_pass_input;
   let sta_ssid_input;
   let sta_pass_input;
+  let hostname_input;
 
   let current_tab = "WiFi";
   if (localStorage.getItem("current_tab") != null) {
@@ -56,6 +57,7 @@
       ap_pass: ap_pass_input.get_value(),
       sta_ssid: sta_ssid_input.get_value(),
       sta_pass: sta_pass_input.get_value(),
+      hostname: hostname_input.get_value(),
     }).then((json) => {
       if (json.error) {
         popup_message_text = json.error;
@@ -145,6 +147,8 @@
             <div><Spinner /></div>
             <div class="value-name">Pass:</div>
             <div><Spinner /></div>
+            <div class="value-name">Hostname:</div>
+            <div><Spinner /></div>
           {:then json}
             <div class="value-name">Mode:</div>
             <div>
@@ -183,6 +187,11 @@
             <div class="value-name">Pass:</div>
             <div>
               <Input value={json.ap_pass} bind:this={ap_pass_input} />
+            </div>
+
+            <div class="value-name">Hostname:</div>
+            <div>
+              <Input value={json.hostname} bind:this={hostname_input} />
             </div>
           {:catch error}
             <error>{error.message}</error>

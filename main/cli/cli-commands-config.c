@@ -26,6 +26,10 @@ void cli_config_get(Cli* cli, mstring_t* args) {
     cli_printf(cli, "sta_pass: %s", mstring_get_cstr(value));
     cli_write_eol(cli);
 
+    nvs_config_get_hostname(value);
+    cli_printf(cli, "hostname: %s", mstring_get_cstr(value));
+    cli_write_eol(cli);
+
     nvs_config_get_wifi_mode(&wifi_mode);
     switch(wifi_mode) {
     case WiFiModeAP:
@@ -163,6 +167,27 @@ void cli_config_set_sta_ssid(Cli* cli, mstring_t* args) {
     } while(false);
 
     mstring_free(ssid);
+}
+
+void cli_config_set_hostname(Cli* cli, mstring_t* args) {
+    mstring_t* hostname = mstring_alloc();
+
+    do {
+        if(!cli_args_read_quoted_string_and_trim(args, hostname)) {
+            cli_write_str(cli, "config_set_hostname \"<hostname>\", 1-32 symbols");
+            break;
+        }
+
+        if(nvs_config_set_hostname(hostname) == ESP_OK) {
+            cli_write_str(cli, "OK");
+            cli_write_eol(cli);
+            cli_write_str(cli, "Reboot to apply");
+        } else {
+            cli_write_str(cli, "config_set_hostname \"<hostname>\", 1-32 symbols");
+        }
+    } while(false);
+
+    mstring_free(hostname);
 }
 
 const char* nvs_type_to_str(nvs_type_t type) {
