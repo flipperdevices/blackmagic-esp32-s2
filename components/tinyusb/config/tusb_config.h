@@ -126,7 +126,7 @@ extern "C" {
 #define CFG_TUD_MSC CONFIG_ESPUSB_MSC
 #define CFG_TUD_HID CONFIG_ESPUSB_HID
 #define CFG_TUD_MIDI CONFIG_ESPUSB_MIDI
-#define CFG_TUD_VENDOR CONFIG_ESPUSB_VENDOR
+#define CFG_TUD_VENDOR 1
 #define CFG_TUD_CUSTOM_CLASS CONFIG_ESPUSB_CUSTOM_CLASS
 #define CFG_TUD_DFU_RT CONFIG_ESPUSB_DFU
 
@@ -154,8 +154,8 @@ extern "C" {
 //--------------------------------------------------------------------
 // VENDOR FIFO CONFIGURATION
 //--------------------------------------------------------------------
-#define CFG_TUD_VENDOR_RX_BUFSIZE CONFIG_ESPUSB_VENDOR_RX_BUFSIZE
-#define CFG_TUD_VENDOR_TX_BUFSIZE CONFIG_ESPUSB_VENDOR_TX_BUFSIZE
+#define CFG_TUD_VENDOR_RX_BUFSIZE (CONFIG_ESPUSB_VENDOR_RX_BUFSIZE * 2)
+#define CFG_TUD_VENDOR_TX_BUFSIZE (CONFIG_ESPUSB_VENDOR_TX_BUFSIZE * 2)
 
 //--------------------------------------------------------------------
 // MIDI FIFO CONFIGURATION

@@ -55,12 +55,6 @@ tusb_desc_device_t const blackmagic_desc_device = {
     .bNumConfigurations = 0x01,
 };
 
-// Invoked when received GET DEVICE DESCRIPTOR
-// Application return pointer to descriptor
-uint8_t const* tud_descriptor_device_cb(void) {
-    return (uint8_t const*)&blackmagic_desc_device;
-}
-
 //--------------------------------------------------------------------+
 // Configuration Descriptor
 //--------------------------------------------------------------------+
@@ -149,21 +143,6 @@ uint8_t const blackmagic_desc_hs_configuration[] = {
 };
 #endif
 
-// Invoked when received GET CONFIGURATION DESCRIPTOR
-// Application return pointer to descriptor
-// Descriptor contents must exist long enough for transfer to complete
-uint8_t const* tud_descriptor_configuration_cb(uint8_t index) {
-    (void)index; // for multiple configurations
-
-#if TUD_OPT_HIGH_SPEED
-    // Although we are highspeed, host may be fullspeed.
-    return (tud_speed_get() == TUSB_SPEED_HIGH) ? blackmagic_desc_hs_configuration :
-                                                  blackmagic_desc_fs_configuration;
-#else
-    return blackmagic_desc_fs_configuration;
-#endif
-}
-
 //--------------------------------------------------------------------+
 // String Descriptors
 //--------------------------------------------------------------------+
@@ -184,7 +163,7 @@ static uint16_t _desc_str[MAX_DESC_BUF_SIZE];
 
 // Invoked when received GET STRING DESCRIPTOR request
 // Application return pointer to descriptor, whose contents must exist long enough for transfer to complete
-uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
+uint16_t const* blackmagic_descriptor_string_cb(uint8_t index, uint16_t langid) {
     (void)langid;
 
     uint8_t chr_count;
