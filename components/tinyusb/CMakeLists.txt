@@ -56,7 +56,8 @@ target_sources(${COMPONENT_TARGET} INTERFACE
     "${COMPONENT_DIR}/tinyusb/src/host/usbh_control.c"
 
     "${COMPONENT_DIR}/drivers/usb-glue.c"
-    "${COMPONENT_DIR}/drivers/dual-cdc/dual-cdc-driver.c"
+
+    # "${COMPONENT_DIR}/drivers/dual-cdc/dual-cdc-driver.c"
     "${COMPONENT_DIR}/drivers/dual-cdc/dual-cdc-descriptors.c"
 
     # "${COMPONENT_DIR}/drivers/dap-link/vendor_device.c"

@@ -1,6 +1,8 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
+#include <esp_err.h>
+#include <tusb.h>
 
 typedef enum {
     USBDeviceTypeDapLink,
@@ -9,7 +11,9 @@ typedef enum {
 
 /***** Common *****/
 
-void usb_glue_init(USBDeviceType device_type);
+esp_err_t usb_glue_init(USBDeviceType device_type);
+
+void usb_glue_reset_bus();
 
 void usb_glue_set_connected_callback(void (*callback)(void* context), void* context);
 
