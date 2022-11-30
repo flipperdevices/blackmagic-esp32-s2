@@ -24,11 +24,96 @@ const USBDevice usb_device[] = {
         },
 };
 
-static USBDeviceType usb_device_type = USBDeviceTypeDapLink;
+static USBDeviceType usb_device_type = USBDeviceTypeDualCDC;
 
-void usb_glue_init(USBDeviceType device_type) {
-    usb_device_type = device_type;
+typedef enum {
+    BlackmagicCDCTypeGDB = 0,
+    BlackmagicCDCTypeUART = 1,
+} BlackmagicCDCType;
+
+typedef enum {
+    DapCDCTypeUART = 0,
+} DapCDCType;
+
+typedef struct {
+    void (*connected)(void* context);
+    void* connected_context;
+    void (*disconnected)(void* context);
+    void* disconnected_context;
+    void (*cdc_receive)(void* context);
+    void* cdc_receive_context;
+    void (*cdc_line_coding)(cdc_line_coding_t const* p_line_coding, void* context);
+    void* cdc_line_coding_context;
+    void (*cdc_line_state)(bool dtr, bool rts, void* context);
+    void* cdc_line_state_context;
+    void (*gdb_receive)(void* context);
+    void* gdb_receive_context;
+    void (*dap_receive)(void* context);
+    void* dap_receive_context;
+} USBGlueCallbacks;
+
+static USBGlueCallbacks callbacks = {
+    .connected = NULL,
+    .connected_context = NULL,
+    .disconnected = NULL,
+    .disconnected_context = NULL,
+    .cdc_receive = NULL,
+    .cdc_receive_context = NULL,
+    .cdc_line_coding = NULL,
+    .cdc_line_coding_context = NULL,
+    .cdc_line_state = NULL,
+    .cdc_line_state_context = NULL,
+    .gdb_receive = NULL,
+    .gdb_receive_context = NULL,
+    .dap_receive = NULL,
+    .dap_receive_context = NULL,
+};
+
+/***** Callbacks *****/
+
+static void callback_connected(void) {
+    if(callbacks.connected) {
+        callbacks.connected(callbacks.connected_context);
+    }
 }
+
+static void callback_disconnected(void) {
+    if(callbacks.disconnected) {
+        callbacks.disconnected(callbacks.disconnected_context);
+    }
+}
+
+static void callback_cdc_receive() {
+    if(callbacks.cdc_receive) {
+        callbacks.cdc_receive(callbacks.cdc_receive_context);
+    }
+}
+
+static void callback_cdc_line_coding(cdc_line_coding_t const* p_line_coding) {
+    if(callbacks.cdc_line_coding) {
+        callbacks.cdc_line_coding(p_line_coding, callbacks.cdc_line_coding_context);
+    }
+}
+
+static void callback_cdc_line_state(bool dtr, bool rts) {
+    if(callbacks.cdc_line_state) {
+        callbacks.cdc_line_state(dtr, rts, callbacks.cdc_line_state_context);
+    }
+}
+
+static void callback_gdb_receive() {
+    if(callbacks.gdb_receive) {
+        callbacks.gdb_receive(callbacks.gdb_receive_context);
+    }
+}
+
+static void callback_dap_receive() {
+    if(callbacks.dap_receive) {
+        callbacks.dap_receive(callbacks.dap_receive_context);
+    }
+}
+
+/***** Tiny USB *****/
 
 // Invoked when received GET DEVICE DESCRIPTOR
 // Application return pointer to descriptor
@@ -78,4 +163,151 @@ bool tud_vendor_control_xfer_cb(
     }
 
     return true;
+}
+
+void tud_mount_cb(void) {
+    callback_connected();
+}
+
+void tud_umount_cb(void) {
+    callback_disconnected();
+}
+
+void tud_resume_cb(void) {
+    callback_connected();
+}
+
+void tud_suspend_cb(bool remote_wakeup_en) {
+    callback_disconnected();
+}
+
+void tud_cdc_rx_cb(uint8_t interface) {
+    do {
+        if(usb_device_type == USBDeviceTypeDualCDC) {
+            if(interface == BlackmagicCDCTypeGDB) {
+                callback_gdb_receive();
+                break;
+            } else if(interface == BlackmagicCDCTypeUART) {
+                callback_cdc_receive();
+                break;
+            }
+        } else if(usb_device_type == USBDeviceTypeDapLink) {
+            if(interface == DapCDCTypeUART) {
+                callback_cdc_receive();
+                break;
+            }
+        }
+
+        tud_cdc_n_read_flush(interface);
+    } while(false);
+}
+
+void tud_cdc_line_state_cb(uint8_t interface, bool dtr, bool rts) {
+    if(usb_device_type == USBDeviceTypeDualCDC) {
+        if(interface == BlackmagicCDCTypeUART) {
+            callback_cdc_line_state(dtr, rts);
+        }
+    } else if(usb_device_type == USBDeviceTypeDapLink) {
+        if(interface == DapCDCTypeUART) {
+            callback_cdc_line_state(dtr, rts);
+        }
+    }
+}
+
+void tud_cdc_line_coding_cb(uint8_t interface, cdc_line_coding_t const* p_line_coding) {
+    if(usb_device_type == USBDeviceTypeDualCDC) {
+        if(interface == BlackmagicCDCTypeUART) {
+            callback_cdc_line_coding(p_line_coding);
+        }
+    } else if(usb_device_type == USBDeviceTypeDapLink) {
+        if(interface == DapCDCTypeUART) {
+            callback_cdc_line_coding(p_line_coding);
+        }
+    }
+}
+
+/***** Glue *****/
+
+void usb_glue_init(USBDeviceType device_type) {
+    usb_device_type = device_type;
+}
+
+void usb_glue_set_connected_callback(void (*callback)(void* context), void* context) {
+    callbacks.connected = callback;
+    callbacks.connected_context = context;
+}
+
+void usb_glue_set_disconnected_callback(void (*callback)(void* context), void* context) {
+    callbacks.disconnected = callback;
+    callbacks.disconnected_context = context;
+}
+
+void usb_glue_cdc_set_receive_callback(void (*callback)(void* context), void* context) {
+    callbacks.cdc_receive = callback;
+    callbacks.cdc_receive_context = context;
+}
+
+void usb_glue_cdc_set_line_coding_callback(
+    void (*callback)(cdc_line_coding_t const* p_line_coding, void* context),
+    void* context) {
+    callbacks.cdc_line_coding = callback;
+    callbacks.cdc_line_coding_context = context;
+}
+
+void usb_glue_cdc_set_line_state_callback(
+    void (*callback)(bool dtr, bool rts, void* context),
+    void* context) {
+    callbacks.cdc_line_state = callback;
+    callbacks.cdc_line_state_context = context;
+}
+
+void usb_glue_gdb_set_receive_callback(void (*callback)(void* context), void* context) {
+    callbacks.gdb_receive = callback;
+    callbacks.gdb_receive_context = context;
+}
+
+void usb_glue_dap_set_receive_callback(void (*callback)(void* context), void* context) {
+    callbacks.dap_receive = callback;
+    callbacks.dap_receive_context = context;
+}
+
+void usb_glue_cdc_send(const uint8_t* buf, size_t len, bool flush) {
+    if(usb_device_type == USBDeviceTypeDualCDC) {
+        tud_cdc_n_write(BlackmagicCDCTypeUART, buf, len);
+        if(flush) {
+            tud_cdc_n_write_flush(BlackmagicCDCTypeUART);
+        }
+    } else {
+        tud_cdc_n_write(DapCDCTypeUART, buf, len);
+        if(flush) {
+            tud_cdc_n_write_flush(DapCDCTypeUART);
+        }
+    }
+}
+
+size_t usb_glue_cdc_receive(uint8_t* buf, size_t len) {
+    return tud_cdc_n_read(BlackmagicCDCTypeUART, buf, len);
+}
+
+void usb_glue_gdb_send(const uint8_t* buf, size_t len, bool flush) {
+    if(usb_device_type == USBDeviceTypeDualCDC) {
+        tud_cdc_n_write(BlackmagicCDCTypeGDB, buf, len);
+        if(flush) {
+            tud_cdc_n_write_flush(BlackmagicCDCTypeGDB);
+        }
+    } else {
+        esp_system_abort("Wrong USB device type");
+    }
+}
+
+size_t usb_glue_gdb_receive(uint8_t* buf, size_t len) {
+    return tud_cdc_n_read(BlackmagicCDCTypeGDB, buf, len);
+}
+
+void usb_glue_dap_send(const uint8_t* buf, size_t len, bool flush) {
+    // TODO
+}
+
+size_t usb_glue_dap_receive(uint8_t* buf, size_t len) {
+    // TODO
 }
