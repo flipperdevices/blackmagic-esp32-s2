@@ -325,11 +325,11 @@ TU_VERIFY_STATIC(sizeof(dap_link_desc_ms_os_20) == MS_OS_20_DESC_LEN, "Incorrect
 
 static char const* string_desc_arr[] = {
     (const char[]){0x09, 0x04}, // 0: is supported language is English (0x0409)
-    "TinyUSB", // 1: Manufacturer
-    "TinyUSB Device", // 2: Product
-    "blackmagic", // 3: Serials, should use chip ID
-    "TinyUSB CDC", // 4: CDC Interface
-    "TinyUSB CMSIS-DAP" // 5: Vendor Interface
+    "CMSIS-DAP", // 1: Manufacturer
+    "CMSIS-DAP Device", // 2: Product
+    "dap", // 3: Serials, should use chip ID
+    "CMSIS-DAP CDC", // 4: CDC Interface
+    "CMSIS-DAP DAP" // 5: Vendor Interface
 };
 
 static uint16_t _desc_str[32];
