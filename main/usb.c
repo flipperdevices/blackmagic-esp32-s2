@@ -113,6 +113,7 @@ static void usb_from_connected(void* context) {
 #define CONFIG_DAP_TASK_STACK_SIZE 4096
 #define CONFIG_DAP_TASK_PRIORITY 5
 #define DAP_RECEIVE_FLAG (1 << 0)
+#define DAP_TAG "dap_task"
 
 #include "dap.h"
 #include "dap_config.h"
@@ -123,8 +124,16 @@ static void dap_rx_callback(void* context) {
     xTaskNotify(dap_task_handle, DAP_RECEIVE_FLAG, eSetBits);
 }
 
+void dap_callback_connect(void) {
+    ESP_LOGI(DAP_TAG, "connected");
+}
+
+void dap_callback_disconnect(void) {
+    ESP_LOGI(DAP_TAG, "disconnected");
+}
+
 static void dap_task(void* arg) {
-    ESP_LOGI("dap_task", "started");
+    ESP_LOGI(DAP_TAG, "started");
     uint32_t notified_value;
     dap_init();
 
@@ -144,6 +153,18 @@ static void dap_task(void* arg) {
             }
         }
     }
+}
+
+static void usb_dap_init() {
+    ESP_LOGI(DAP_TAG, "init");
+    xTaskCreate(
+        dap_task,
+        "DAP",
+        CONFIG_DAP_TASK_STACK_SIZE,
+        NULL,
+        CONFIG_DAP_TASK_PRIORITY,
+        &dap_task_handle);
+    ESP_LOGI(DAP_TAG, "init done");
 }
 
 void usb_init(void) {
@@ -171,16 +192,9 @@ void usb_init(void) {
         usb_glue_cdc_set_receive_callback(usb_uart_rx_callback, NULL);
         usb_glue_dap_set_receive_callback(dap_rx_callback, NULL);
 
-        xTaskCreate(
-            dap_task,
-            "DAP",
-            CONFIG_DAP_TASK_STACK_SIZE,
-            NULL,
-            CONFIG_DAP_TASK_PRIORITY,
-            &dap_task_handle);
-
         usb_state.connected = false;
         usb_uart_init();
+        usb_dap_init();
         usb_glue_init(USBDeviceTypeDapLink);
     }
 

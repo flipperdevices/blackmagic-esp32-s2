@@ -41,6 +41,12 @@
 #define ESP_SWDIO_PIN (2)
 
 /*- Prototypes --------------------------------------------------------------*/
+void dap_callback_connect(void);
+void dap_callback_disconnect(void);
+
+void led_set_red(uint8_t value);
+void led_set_green(uint8_t value);
+void led_set_blue(uint8_t value);
 
 /*- Implementations ---------------------------------------------------------*/
 
@@ -160,6 +166,8 @@ static inline void DAP_CONFIG_DISCONNECT(void) {
     // gpio_ll_input_enable(&GPIO, ESP_SWDIO_PIN);
     // gpio_ll_output_disable(&GPIO, ESP_SWCLK_PIN);
     // gpio_ll_input_enable(&GPIO, ESP_SWCLK_PIN);
+
+    dap_callback_disconnect();
 }
 
 //-----------------------------------------------------------------------------
@@ -169,6 +177,8 @@ static inline void DAP_CONFIG_CONNECT_SWD(void) {
 
     GPIO.enable_w1ts = (0x1 << ESP_SWCLK_PIN);
     esp_rom_gpio_connect_out_signal(ESP_SWCLK_PIN, SIG_GPIO_OUT_IDX, false, false);
+
+    dap_callback_connect();
 }
 
 //-----------------------------------------------------------------------------
@@ -178,9 +188,14 @@ static inline void DAP_CONFIG_CONNECT_JTAG(void) {
 
 //-----------------------------------------------------------------------------
 static inline void DAP_CONFIG_LED(int index, int state) {
-    (void)index;
-    (void)state;
-    // Do nothing
+    switch(index) {
+    case 0:
+        led_set_green(255 * state);
+        break;
+    case 1:
+        led_set_red(255 * state);
+        break;
+    }
 }
 
 //-----------------------------------------------------------------------------
