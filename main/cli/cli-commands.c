@@ -28,6 +28,7 @@ void cli_config_set_ap_pass(Cli* cli, mstring_t* args);
 void cli_config_set_ap_ssid(Cli* cli, mstring_t* args);
 void cli_config_set_sta_pass(Cli* cli, mstring_t* args);
 void cli_config_set_sta_ssid(Cli* cli, mstring_t* args);
+void cli_config_set_hostname(Cli* cli, mstring_t* args);
 
 void cli_nvs_dump(Cli* cli, mstring_t* args);
 
@@ -72,6 +73,11 @@ const CliItem cli_items[] = {
         .name = "config_set_sta_ssid",
         .desc = "set STA mode SSID, requires a reboot to apply",
         .callback = cli_config_set_sta_ssid,
+    },
+    {
+        .name = "config_set_hostname",
+        .desc = "set MDNS host name, requires a reboot to apply",
+        .callback = cli_config_set_hostname,
     },
     {
         .name = "device_info",
