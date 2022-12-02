@@ -1,6 +1,6 @@
-set(SOURCES 
+set(SOURCES
     "main.c"
-    "usb-cdc.c"
+    "usb.c"
     "usb-uart.c"
     "nvs.c"
     "nvs-config.c"
@@ -23,12 +23,12 @@ set(SOURCES
     "factory-reset-service.c"
 )
 
-set(INCLUDES 
+set(INCLUDES
     "."
 )
 
 idf_component_register(SRCS ${SOURCES}
-                    INCLUDE_DIRS ${INCLUDES})
+    INCLUDE_DIRS ${INCLUDES})
 
 # Commit
 execute_process(

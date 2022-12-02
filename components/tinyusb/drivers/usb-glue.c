@@ -405,10 +405,13 @@ size_t usb_glue_gdb_receive(uint8_t* buf, size_t len) {
 }
 
 void usb_glue_dap_send(const uint8_t* buf, size_t len, bool flush) {
-    // TODO
+    if(usb_device_type == USBDeviceTypeDapLink) {
+        tud_vendor_write(buf, len);
+    } else {
+        esp_system_abort("Wrong USB device type");
+    }
 }
 
 size_t usb_glue_dap_receive(uint8_t* buf, size_t len) {
-    // TODO
-    return 0;
+    return tud_vendor_read(buf, len);
 }

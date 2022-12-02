@@ -7,3 +7,6 @@
 [submodule "components/tinyusb/tinyusb"]
 	path = components/tinyusb/tinyusb
 	url = https://github.com/hathach/tinyusb
+[submodule "components/dap-link/free-dap"]
+	path = components/dap-link/free-dap
+	url = https://github.com/ataradov/free-dap

@@ -3,7 +3,7 @@
 #include <freertos/task.h>
 #include <freertos/stream_buffer.h>
 #include <esp_log.h>
-#include "usb-cdc.h"
+#include "usb.h"
 #include "usb-uart.h"
 
 #define USB_UART_PORT_NUM UART_NUM_0
@@ -41,9 +41,6 @@ void usb_uart_init() {
     };
 
     simple_uart_init(&config);
-
-    usb_uart_write((const uint8_t*)"Go", 2);
-
     ESP_LOGI(TAG, "init done");
 }
 
@@ -129,9 +126,9 @@ static void usb_uart_rx_task(void* pvParameters) {
         if(length > 0) {
             for(size_t i = 0; i < length; i++) {
                 if((i + 1) == length) {
-                    usb_cdc_uart_tx_char(data[i], true);
+                    usb_uart_tx_char(data[i], true);
                 } else {
-                    usb_cdc_uart_tx_char(data[i], false);
+                    usb_uart_tx_char(data[i], false);
                 }
             }
         }

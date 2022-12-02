@@ -14,6 +14,14 @@
 #define CFG_WIFI_MODE_AP "AP"
 #define CFG_WIFI_MODE_STA "STA"
 
+#define CFG_USB_MODE_BLACKMAGIC "BLACKMAGIC"
+#define CFG_USB_MODE_DAP "DAP"
+
+typedef enum {
+    UsbModeBM, // Blackmagic-probe
+    UsbModeDAP, // Dap-link
+} UsbMode;
+
 typedef enum {
     WiFiModeAP, // host of a WiFi network
     WiFiModeSTA, // connected to existing WiFi AP
