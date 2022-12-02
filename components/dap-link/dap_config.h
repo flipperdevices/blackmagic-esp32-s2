@@ -44,10 +44,6 @@
 void dap_callback_connect(void);
 void dap_callback_disconnect(void);
 
-void led_set_red(uint8_t value);
-void led_set_green(uint8_t value);
-void led_set_blue(uint8_t value);
-
 /*- Implementations ---------------------------------------------------------*/
 
 //-----------------------------------------------------------------------------
@@ -188,14 +184,7 @@ static inline void DAP_CONFIG_CONNECT_JTAG(void) {
 
 //-----------------------------------------------------------------------------
 static inline void DAP_CONFIG_LED(int index, int state) {
-    switch(index) {
-    case 0:
-        led_set_green(255 * state);
-        break;
-    case 1:
-        led_set_red(255 * state);
-        break;
-    }
+    // Do nothing
 }
 
 //-----------------------------------------------------------------------------

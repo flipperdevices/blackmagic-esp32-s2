@@ -126,15 +126,18 @@ static void dap_rx_callback(void* context) {
 
 void dap_callback_connect(void) {
     ESP_LOGI(DAP_TAG, "connected");
+    led_set(0, 0, 0);
 }
 
 void dap_callback_disconnect(void) {
     ESP_LOGI(DAP_TAG, "disconnected");
+    led_set(255, 0, 0);
 }
 
 static void dap_task(void* arg) {
     ESP_LOGI(DAP_TAG, "started");
     uint32_t notified_value;
+    size_t counter = 0;
     dap_init();
 
     while(1) {
@@ -147,9 +150,17 @@ static void dap_task(void* arg) {
                 memset(tx_data, 0, DAP_CONFIG_PACKET_SIZE);
                 memset(rx_data, 0, DAP_CONFIG_PACKET_SIZE);
 
+                if(counter % 512 == 0) {
+                    led_set_blue(255);
+                } else if(counter % 512 == 256) {
+                    led_set_blue(0);
+                }
+
                 size_t rx_size = usb_glue_dap_receive(rx_data, sizeof(rx_data));
                 size_t tx_size = dap_process_request(rx_data, rx_size, tx_data, sizeof(tx_data));
                 usb_glue_dap_send(tx_data, tx_size, true);
+
+                counter++;
             }
         }
     }
