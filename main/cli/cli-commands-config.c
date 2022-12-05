@@ -33,10 +33,13 @@ void cli_config_get(Cli* cli, mstring_t* args) {
     nvs_config_get_wifi_mode(&wifi_mode);
     switch(wifi_mode) {
     case WiFiModeAP:
-        mstring_set(value, "AP");
+        mstring_set(value, CFG_WIFI_MODE_AP);
         break;
     case WiFiModeSTA:
-        mstring_set(value, "STA");
+        mstring_set(value, CFG_WIFI_MODE_STA);
+        break;
+    case WiFiModeDisabled:
+        mstring_set(value, CFG_WIFI_MODE_DISABLED);
         break;
     }
 
@@ -48,9 +51,11 @@ void cli_config_get(Cli* cli, mstring_t* args) {
 void cli_config_set_wifi_mode_usage(Cli* cli) {
     cli_write_str(cli, "config_set_wifi_mode <AP|STA>");
     cli_write_eol(cli);
-    cli_write_str(cli, " AP (make own WiFi AP)");
+    cli_write_str(cli, " " CFG_WIFI_MODE_AP " (make own WiFi AP)");
     cli_write_eol(cli);
-    cli_write_str(cli, " STA (connect to WiFi)");
+    cli_write_str(cli, " " CFG_WIFI_MODE_STA " (connect to WiFi)");
+    cli_write_eol(cli);
+    cli_write_str(cli, " " CFG_WIFI_MODE_DISABLED " (disable WiFi)");
     cli_write_eol(cli);
 }
 
@@ -64,10 +69,12 @@ void cli_config_set_wifi_mode(Cli* cli, mstring_t* args) {
             break;
         }
 
-        if(mstring_cmp_cstr(mode, "AP") == 0) {
+        if(mstring_cmp_cstr(mode, CFG_WIFI_MODE_AP) == 0) {
             wifi_mode = WiFiModeAP;
-        } else if(mstring_cmp_cstr(mode, "STA") == 0) {
+        } else if(mstring_cmp_cstr(mode, CFG_WIFI_MODE_STA) == 0) {
             wifi_mode = WiFiModeSTA;
+        } else if(mstring_cmp_cstr(mode, CFG_WIFI_MODE_DISABLED) == 0) {
+            wifi_mode = WiFiModeDisabled;
         } else {
             cli_config_set_wifi_mode_usage(cli);
             break;

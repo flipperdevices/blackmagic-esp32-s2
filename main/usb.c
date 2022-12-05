@@ -117,8 +117,10 @@ static void usb_from_connected(void* context) {
 
 #include "dap.h"
 #include "dap_config.h"
+#include "network-gdb.h"
 
 TaskHandle_t dap_task_handle;
+bool dap_link_connected = false;
 
 static void dap_rx_callback(void* context) {
     xTaskNotify(dap_task_handle, DAP_RECEIVE_FLAG, eSetBits);
@@ -127,11 +129,17 @@ static void dap_rx_callback(void* context) {
 void dap_callback_connect(void) {
     ESP_LOGI(DAP_TAG, "connected");
     led_set(0, 0, 0);
+    dap_link_connected = true;
 }
 
 void dap_callback_disconnect(void) {
     ESP_LOGI(DAP_TAG, "disconnected");
     led_set(255, 0, 0);
+    dap_link_connected = false;
+}
+
+bool dap_is_connected(void) {
+    return dap_link_connected;
 }
 
 static void dap_task(void* arg) {
@@ -144,23 +152,29 @@ static void dap_task(void* arg) {
         BaseType_t xResult = xTaskNotifyWait(pdFALSE, ULONG_MAX, &notified_value, portMAX_DELAY);
 
         if(xResult == pdPASS) {
-            if((notified_value & DAP_RECEIVE_FLAG) != 0) {
-                uint8_t rx_data[DAP_CONFIG_PACKET_SIZE];
-                uint8_t tx_data[DAP_CONFIG_PACKET_SIZE];
-                memset(tx_data, 0, DAP_CONFIG_PACKET_SIZE);
-                memset(rx_data, 0, DAP_CONFIG_PACKET_SIZE);
+            // continue only if network-gdb is not connected
+            if(!network_gdb_connected()) {
+                if((notified_value & DAP_RECEIVE_FLAG) != 0) {
+                    uint8_t rx_data[DAP_CONFIG_PACKET_SIZE];
+                    uint8_t tx_data[DAP_CONFIG_PACKET_SIZE];
+                    memset(tx_data, 0, DAP_CONFIG_PACKET_SIZE);
+                    memset(rx_data, 0, DAP_CONFIG_PACKET_SIZE);
 
-                if(counter % 512 == 0) {
-                    led_set_blue(255);
-                } else if(counter % 512 == 256) {
-                    led_set_blue(0);
+                    if(counter % 512 == 0) {
+                        led_set_blue(255);
+                    } else if(counter % 512 == 256) {
+                        led_set_blue(0);
+                    }
+
+                    size_t rx_size = usb_glue_dap_receive(rx_data, sizeof(rx_data));
+                    size_t tx_size =
+                        dap_process_request(rx_data, rx_size, tx_data, sizeof(tx_data));
+                    usb_glue_dap_send(tx_data, tx_size, true);
+
+                    counter++;
                 }
-
-                size_t rx_size = usb_glue_dap_receive(rx_data, sizeof(rx_data));
-                size_t tx_size = dap_process_request(rx_data, rx_size, tx_data, sizeof(tx_data));
-                usb_glue_dap_send(tx_data, tx_size, true);
-
-                counter++;
+            } else {
+                ESP_LOGE(TAG, "GDB is connected, DAP is disabled");
             }
         }
     }
@@ -170,7 +184,7 @@ static void usb_dap_init() {
     ESP_LOGI(DAP_TAG, "init");
     xTaskCreate(
         dap_task,
-        "DAP",
+        "dap_thread",
         CONFIG_DAP_TASK_STACK_SIZE,
         NULL,
         CONFIG_DAP_TASK_PRIORITY,
@@ -182,25 +196,22 @@ void usb_init(void) {
     ESP_LOGI(TAG, "init");
 
     // TODO get from config
-    UsbMode usb_mode = UsbModeDAP;
+    UsbMode usb_mode = UsbModeBM;
+    nvs_config_get_usb_mode(&usb_mode);
+
+    usb_glue_set_connected_callback(usb_to_connected, NULL);
+    usb_glue_set_disconnected_callback(usb_from_connected, NULL);
+    usb_glue_cdc_set_line_coding_callback(usb_set_line_coding_callback, NULL);
+    usb_glue_cdc_set_line_state_callback(usb_line_state_cb, NULL);
+    usb_glue_cdc_set_receive_callback(usb_uart_rx_callback, NULL);
 
     if(usb_mode == UsbModeBM) {
-        usb_glue_set_connected_callback(usb_to_connected, NULL);
-        usb_glue_set_disconnected_callback(usb_from_connected, NULL);
-        usb_glue_cdc_set_line_coding_callback(usb_set_line_coding_callback, NULL);
-        usb_glue_cdc_set_line_state_callback(usb_line_state_cb, NULL);
-        usb_glue_cdc_set_receive_callback(usb_uart_rx_callback, NULL);
         usb_glue_gdb_set_receive_callback(usb_gdb_rx_callback, NULL);
 
         usb_state.connected = false;
         usb_uart_init();
         usb_glue_init(USBDeviceTypeDualCDC);
     } else {
-        usb_glue_set_connected_callback(usb_to_connected, NULL);
-        usb_glue_set_disconnected_callback(usb_from_connected, NULL);
-        usb_glue_cdc_set_line_coding_callback(usb_set_line_coding_callback, NULL);
-        usb_glue_cdc_set_line_state_callback(usb_line_state_cb, NULL);
-        usb_glue_cdc_set_receive_callback(usb_uart_rx_callback, NULL);
         usb_glue_dap_set_receive_callback(dap_rx_callback, NULL);
 
         usb_state.connected = false;

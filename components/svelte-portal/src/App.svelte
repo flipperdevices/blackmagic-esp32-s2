@@ -9,7 +9,7 @@
 
   let server = "";
   if (development_mode) {
-    server = "http://192.168.31.81";
+    server = "http://172.30.1.84";
   }
 
   async function api_post(api, data) {
@@ -36,6 +36,7 @@
   let popup_message_text;
 
   let mode_select;
+  let usb_mode_select;
   let ap_ssid_input;
   let ap_pass_input;
   let sta_ssid_input;
@@ -53,6 +54,7 @@
 
     await api_post(server + "/api/v1/wifi/set_credentials", {
       wifi_mode: mode_select.get_value(),
+      usb_mode: usb_mode_select.get_value(),
       ap_ssid: ap_ssid_input.get_value(),
       ap_pass: ap_pass_input.get_value(),
       sta_ssid: sta_ssid_input.get_value(),
@@ -139,15 +141,21 @@
           {#await api_get(server + "/api/v1/wifi/get_credentials")}
             <div class="value-name">Mode:</div>
             <div><Spinner /></div>
+            <div class="value-name">STA</div>
+            <div>(join another network)</div>
             <div class="value-name">SSID:</div>
             <div><Spinner /></div>
             <div class="value-name">Pass:</div>
             <div><Spinner /></div>
+            <div class="value-name">AP</div>
+            <div>(own access point)</div>
             <div class="value-name">SSID:</div>
             <div><Spinner /></div>
             <div class="value-name">Pass:</div>
             <div><Spinner /></div>
             <div class="value-name">Hostname:</div>
+            <div><Spinner /></div>
+            <div class="value-name">USB mode:</div>
             <div><Spinner /></div>
           {:then json}
             <div class="value-name">Mode:</div>
@@ -157,6 +165,7 @@
                 items={[
                   { text: "STA (join another network)", value: "STA" },
                   { text: "AP (own access point)", value: "AP" },
+                  { text: "Disabled (do not use WiFi)", value: "Disabled" },
                 ]}
                 value={json.wifi_mode}
               />
@@ -192,6 +201,18 @@
             <div class="value-name">Hostname:</div>
             <div>
               <Input value={json.hostname} bind:this={hostname_input} />
+            </div>
+
+            <div class="value-name">USB mode:</div>
+            <div>
+              <Select
+                bind:this={usb_mode_select}
+                items={[
+                  { text: "BlackMagicProbe", value: "BM" },
+                  { text: "DapLink", value: "DAP" },
+                ]}
+                value={json.usb_mode}
+              />
             </div>
           {:catch error}
             <error>{error.message}</error>

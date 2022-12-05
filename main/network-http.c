@@ -307,8 +307,10 @@ static esp_err_t wifi_get_credentials_handler(httpd_req_t* req) {
     mstring_t* sta_pass = mstring_alloc();
     mstring_t* hostname = mstring_alloc();
     WiFiMode wifi_mode;
+    UsbMode usb_mode;
 
     nvs_config_get_wifi_mode(&wifi_mode);
+    nvs_config_get_usb_mode(&usb_mode);
     nvs_config_get_ap_ssid(ap_ssid);
     nvs_config_get_ap_pass(ap_pass);
     nvs_config_get_sta_ssid(sta_ssid);
@@ -327,6 +329,18 @@ static esp_err_t wifi_get_credentials_handler(httpd_req_t* req) {
         break;
     case WiFiModeSTA:
         cJSON_AddStringToObject(root, "wifi_mode", CFG_WIFI_MODE_STA);
+        break;
+    case WiFiModeDisabled:
+        cJSON_AddStringToObject(root, "wifi_mode", CFG_WIFI_MODE_DISABLED);
+        break;
+    }
+
+    switch(usb_mode) {
+    case UsbModeBM:
+        cJSON_AddStringToObject(root, "usb_mode", CFG_USB_MODE_BM);
+        break;
+    case UsbModeDAP:
+        cJSON_AddStringToObject(root, "usb_mode", CFG_USB_MODE_DAP);
         break;
     }
 
@@ -352,6 +366,7 @@ static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
     mstring_t* sta_ssid = mstring_alloc();
     mstring_t* sta_pass = mstring_alloc();
     mstring_t* wifi_mode = mstring_alloc();
+    mstring_t* usb_mode = mstring_alloc();
     mstring_t* hostname = mstring_alloc();
     const char* error_text = JSON_ERROR("unknown error");
     int received = 0;
@@ -413,6 +428,14 @@ static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
         goto err_fail;
     }
 
+    if(cJSON_GetObjectItem(root, "usb_mode") != NULL) {
+        mstring_set(usb_mode, cJSON_GetObjectItem(root, "usb_mode")->valuestring);
+    } else {
+        cJSON_Delete(root);
+        error_text = JSON_ERROR("request dont have [usb_mode] field");
+        goto err_fail;
+    }
+
     if(cJSON_GetObjectItem(root, "hostname") != NULL) {
         mstring_set(hostname, cJSON_GetObjectItem(root, "hostname")->valuestring);
     } else {
@@ -423,8 +446,14 @@ static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
     cJSON_Delete(root);
 
     if(strcmp(mstring_get_cstr(wifi_mode), CFG_WIFI_MODE_AP) != 0 &&
-       strcmp(mstring_get_cstr(wifi_mode), CFG_WIFI_MODE_STA) != 0) {
+       strcmp(mstring_get_cstr(wifi_mode), CFG_WIFI_MODE_STA) != 0 &&
+       strcmp(mstring_get_cstr(wifi_mode), CFG_WIFI_MODE_DISABLED) != 0) {
         error_text = JSON_ERROR("invalid value in [wifi_mode]");
+        goto err_fail;
+    }
+    if(strcmp(mstring_get_cstr(usb_mode), CFG_USB_MODE_BM) != 0 &&
+       strcmp(mstring_get_cstr(usb_mode), CFG_USB_MODE_DAP) != 0) {
+        error_text = JSON_ERROR("invalid value in [usb_mode]");
         goto err_fail;
     }
 
@@ -447,12 +476,29 @@ static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
 
     if(strcmp(mstring_get_cstr(wifi_mode), CFG_WIFI_MODE_AP) == 0) {
         if(nvs_config_set_wifi_mode(WiFiModeAP) != ESP_OK) {
-            error_text = JSON_ERROR("invalid value in [sta_pass]");
+            error_text = JSON_ERROR("cannot set [wifi_mode]");
+            goto err_fail;
+        }
+    } else if(strcmp(mstring_get_cstr(wifi_mode), CFG_WIFI_MODE_DISABLED) == 0) {
+        if(nvs_config_set_wifi_mode(WiFiModeDisabled) != ESP_OK) {
+            error_text = JSON_ERROR("cannot set [wifi_mode]");
             goto err_fail;
         }
     } else {
         if(nvs_config_set_wifi_mode(WiFiModeSTA) != ESP_OK) {
-            error_text = JSON_ERROR("invalid value in [sta_pass]");
+            error_text = JSON_ERROR("cannot set [wifi_mode]");
+            goto err_fail;
+        }
+    }
+
+    if(strcmp(mstring_get_cstr(usb_mode), CFG_USB_MODE_DAP) == 0) {
+        if(nvs_config_set_usb_mode(UsbModeDAP) != ESP_OK) {
+            error_text = JSON_ERROR("cannot set [usb_mode]");
+            goto err_fail;
+        }
+    } else {
+        if(nvs_config_set_usb_mode(UsbModeBM) != ESP_OK) {
+            error_text = JSON_ERROR("cannot set [usb_mode]");
             goto err_fail;
         }
     }
@@ -469,6 +515,7 @@ static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
     mstring_free(sta_ssid);
     mstring_free(sta_pass);
     mstring_free(wifi_mode);
+    mstring_free(usb_mode);
     mstring_free(hostname);
     return ESP_OK;
 
