@@ -19,6 +19,8 @@ void usb_glue_set_connected_callback(void (*callback)(void* context), void* cont
 
 void usb_glue_set_disconnected_callback(void (*callback)(void* context), void* context);
 
+const char* usb_glue_get_serial_number();
+
 /***** USB-UART *****/
 
 void usb_glue_cdc_send(const uint8_t* buf, size_t len, bool flush);

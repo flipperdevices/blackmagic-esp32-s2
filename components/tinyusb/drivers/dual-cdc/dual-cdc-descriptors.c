@@ -148,8 +148,8 @@ uint8_t const blackmagic_desc_hs_configuration[] = {
 //--------------------------------------------------------------------+
 
 // array of pointer to string descriptors
-char const* blackmagic_string_desc[] = {
-    (const char[]){0x09, 0x04}, // 0: is supported language is English (0x0409)
+static char* blackmagic_string_desc[] = {
+    (char[]){0x09, 0x04}, // 0: is supported language is English (0x0409)
     "Flipper Devices Inc.", // 1: Manufacturer
     "Blackmagic ESP32", // 2: Product
     "blackmagic", // 3: Serials, should use chip ID
@@ -157,6 +157,12 @@ char const* blackmagic_string_desc[] = {
     "", // 5: MSC Interface
     "", // 6: HIDs
 };
+
+void blackmagic_set_serial_number(const char* serial_number) {
+    blackmagic_string_desc[3] = malloc(strlen("blackmagic_") + strlen(serial_number) + 1);
+    strcpy(blackmagic_string_desc[3], "blackmagic_");
+    strcat(blackmagic_string_desc[3], serial_number);
+}
 
 #define MAX_DESC_BUF_SIZE 32
 static uint16_t _desc_str[MAX_DESC_BUF_SIZE];

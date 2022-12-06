@@ -23,8 +23,8 @@
 
 // DAP_CONFIG_PRODUCT_STR must contain "CMSIS-DAP" to be compatible with the standard
 #define DAP_CONFIG_VENDOR_STR "Flipper Devices"
-#define DAP_CONFIG_PRODUCT_STR "Generic CMSIS-DAP Adapter"
-#define DAP_CONFIG_SER_NUM_STR "1234567890"
+#define DAP_CONFIG_PRODUCT_STR "ESP32S2 CMSIS-DAP Adapter"
+#define DAP_CONFIG_SER_NUM_STR dap_serial_number
 #define DAP_CONFIG_CMSIS_DAP_VER_STR "2.0.0"
 
 // Attribute to use for performance-critical functions
@@ -43,7 +43,7 @@
 /*- Prototypes --------------------------------------------------------------*/
 void dap_callback_connect(void);
 void dap_callback_disconnect(void);
-
+extern char dap_serial_number[32];
 /*- Implementations ---------------------------------------------------------*/
 
 //-----------------------------------------------------------------------------

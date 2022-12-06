@@ -323,14 +323,20 @@ uint8_t const dap_link_desc_ms_os_20[] = {
 
 TU_VERIFY_STATIC(sizeof(dap_link_desc_ms_os_20) == MS_OS_20_DESC_LEN, "Incorrect size");
 
-static char const* string_desc_arr[] = {
-    (const char[]){0x09, 0x04}, // 0: is supported language is English (0x0409)
+static char* string_desc_arr[] = {
+    (char[]){0x09, 0x04}, // 0: is supported language is English (0x0409)
     "CMSIS-DAP", // 1: Manufacturer
-    "CMSIS-DAP Device", // 2: Product
-    "dap", // 3: Serials, should use chip ID
+    "CMSIS-DAP ESP32S2 Device", // 2: Product
+    "DAP", // 3: Serials, should use chip ID
     "CMSIS-DAP CDC", // 4: CDC Interface
     "CMSIS-DAP DAP" // 5: Vendor Interface
 };
+
+void dap_link_set_serial_number(const char* serial_number) {
+    string_desc_arr[3] = malloc(strlen("DAP_") + strlen(serial_number) + 1);
+    strcpy(string_desc_arr[3], "DAP_");
+    strcat(string_desc_arr[3], serial_number);
+}
 
 static uint16_t _desc_str[32];
 

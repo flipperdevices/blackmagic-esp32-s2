@@ -296,9 +296,41 @@ static void usb_hal_tusb_device_task(void* arg) {
 }
 
 /***** Glue *****/
+char* serial_desc = NULL;
+char dap_serial_number[32];
+
+static void usb_glue_set_serial_number(uint8_t* serial_number, uint8_t length) {
+    if(serial_desc != NULL) {
+        free(serial_desc);
+    }
+
+    serial_desc = malloc(length * 2 + 1);
+    for(uint8_t i = 0; i < length; i++) {
+        uint8_t nibble = serial_number[i] >> 4;
+        serial_desc[i * 2 + 0] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
+        nibble = serial_number[i] & 0x0F;
+        serial_desc[i * 2 + 1] = nibble < 10 ? '0' + nibble : 'A' + nibble - 10;
+    }
+    serial_desc[length * 2] = 0;
+}
+
+const char* usb_glue_get_serial_number() {
+    return serial_desc;
+}
 
 esp_err_t usb_glue_init(USBDeviceType device_type) {
     usb_device_type = device_type;
+
+    uint8_t mac[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    if(esp_efuse_mac_get_default(mac) == ESP_OK) {
+        usb_glue_set_serial_number(mac, 6);
+        dap_link_set_serial_number(usb_glue_get_serial_number());
+        blackmagic_set_serial_number(usb_glue_get_serial_number());
+        strncpy(dap_serial_number, usb_glue_get_serial_number(), sizeof(dap_serial_number) - 1);
+        dap_serial_number[sizeof(dap_serial_number) - 1] = '\0';
+        ESP_LOGI(TAG, "Serial number: %s", usb_glue_get_serial_number());
+        ESP_LOGI(TAG, "Dap serial number: %s", dap_serial_number);
+    }
 
     usb_hal_bus_reset();
 
