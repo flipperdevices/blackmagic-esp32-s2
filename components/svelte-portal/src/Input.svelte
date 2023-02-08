@@ -21,13 +21,12 @@
   autocomplete="off"
   type="text"
   {value}
-  class="input-text-css"
   size={value.length > 3 ? value.length : 3}
   on:input={text_input}
 />
 
 <style>
-  .input-text-css {
+  input {
     display: inline-block;
     color: #000;
     font-size: 28px;
@@ -47,9 +46,15 @@
     height: 32px;
   }
 
-  .input-text-css:focus-visible,
-  .input-text-css:hover {
+  input:focus-visible,
+  input:hover {
     outline: 0;
     background-color: white;
+  }
+
+  @media (max-width: 520px) {
+    input {
+      max-width: 100%;
+    }
   }
 </style>
