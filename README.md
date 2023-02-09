@@ -13,7 +13,7 @@ You must recursively clone the submodules, which `--recursive` will do for you. 
 
 # Develop with ESP-IDF
 
-Set up ESP-IDF following [Espressif's instructions](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html). Make sure `idf.py` is in your PATH and you can successfully run the program.
+Set up __ESP-IDF v4.4__ following [Espressif's instructions](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html). Make sure `idf.py` is in your PATH and you can successfully run the program.
 
 ## Build with ESP-IDF
 
@@ -40,6 +40,14 @@ idf.py -p <port> monitor
 ```
 
 You should not see errors in the logs if the firmware is installed and running correctly. 
+
+## Web interface development
+
+Web interface is located in `components/svelte-portal` and written in Svelte. To build it, you need to install Node.js and run `npm install` in `components/svelte-portal` directory. Then you can run `npm run dev` to start development server or `npm run build` to build production version.
+
+Typical workflow is to fix the board's IP address in `components/svelte-portal/src/App.svelte` and then run `npm run dev`. After that, you can open `http://localhost:5000` in your browser and see changes in the web interface in real time with live reload.
+
+When you're done, you need to run `npm run build`, `idf.py build` and then `idf.py -p <port> flash`. You can then open `http://blackmagic.local` in your browser and see the changes in the web interface.
 
 ## Schematic
 
