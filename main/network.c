@@ -201,6 +201,8 @@ WiFiMode network_init(void) {
         nvs_config_get_sta_pass(pass);
         network_connect_ap(ssid, pass);
         break;
+    case WiFiModeDisabled:
+        break;
     }
 
     mstring_free(ssid);

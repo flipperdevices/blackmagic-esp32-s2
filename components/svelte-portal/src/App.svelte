@@ -9,7 +9,7 @@
 
   let server = "";
   if (development_mode) {
-    server = "http://192.168.31.81";
+    server = "http://172.30.1.223";
   }
 
   async function api_post(api, data) {
@@ -36,6 +36,7 @@
   let popup_message_text;
 
   let mode_select;
+  let usb_mode_select;
   let ap_ssid_input;
   let ap_pass_input;
   let sta_ssid_input;
@@ -53,6 +54,7 @@
 
     await api_post(server + "/api/v1/wifi/set_credentials", {
       wifi_mode: mode_select.get_value(),
+      usb_mode: usb_mode_select.get_value(),
       ap_ssid: ap_ssid_input.get_value(),
       ap_pass: ap_pass_input.get_value(),
       sta_ssid: sta_ssid_input.get_value(),
@@ -138,34 +140,50 @@
         <div class="grid">
           {#await api_get(server + "/api/v1/wifi/get_credentials")}
             <div class="value-name">Mode:</div>
-            <div><Spinner /></div>
+            <div class="value"><Spinner /></div>
+
+            <div class="value-name splitter">STA</div>
+            <div class="value mobile-hidden">(join another network)</div>
+
             <div class="value-name">SSID:</div>
-            <div><Spinner /></div>
+            <div class="value"><Spinner /></div>
+
             <div class="value-name">Pass:</div>
-            <div><Spinner /></div>
+            <div class="value"><Spinner /></div>
+
+            <div class="value-name splitter">AP</div>
+            <div class="value mobile-hidden">(own access point)</div>
+
             <div class="value-name">SSID:</div>
-            <div><Spinner /></div>
+            <div class="value"><Spinner /></div>
+
             <div class="value-name">Pass:</div>
-            <div><Spinner /></div>
+            <div>class="value"<Spinner /></div>
+
             <div class="value-name">Hostname:</div>
-            <div><Spinner /></div>
+            <div class="value"><Spinner /></div>
+
+            <div class="value-name">USB mode:</div>
+            <div class="value"><Spinner /></div>
           {:then json}
             <div class="value-name">Mode:</div>
-            <div>
+            <div class="value">
               <Select
                 bind:this={mode_select}
                 items={[
                   { text: "STA (join another network)", value: "STA" },
                   { text: "AP (own access point)", value: "AP" },
+                  { text: "Disabled (do not use WiFi)", value: "Disabled" },
                 ]}
                 value={json.wifi_mode}
               />
             </div>
 
-            <div class="value-name">STA</div>
-            <div>(join another network)</div>
+            <div class="value-name splitter">STA</div>
+            <div class="value mobile-hidden">(join another network)</div>
+
             <div class="value-name">SSID:</div>
-            <div>
+            <div class="value">
               <Input
                 value={json.sta_ssid}
                 bind:this={sta_ssid_input}
@@ -173,25 +191,38 @@
             </div>
 
             <div class="value-name">Pass:</div>
-            <div>
+            <div class="value">
               <Input value={json.sta_pass} bind:this={sta_pass_input} />
             </div>
 
-            <div class="value-name">AP</div>
-            <div>(own access point)</div>
+            <div class="value-name splitter">AP</div>
+            <div class="value mobile-hidden">(own access point)</div>
+
             <div class="value-name">SSID:</div>
-            <div>
+            <div class="value">
               <Input value={json.ap_ssid} bind:this={ap_ssid_input} />
             </div>
 
             <div class="value-name">Pass:</div>
-            <div>
+            <div class="value">
               <Input value={json.ap_pass} bind:this={ap_pass_input} />
             </div>
 
             <div class="value-name">Hostname:</div>
-            <div>
+            <div class="value">
               <Input value={json.hostname} bind:this={hostname_input} />
+            </div>
+
+            <div class="value-name">USB mode:</div>
+            <div class="value">
+              <Select
+                bind:this={usb_mode_select}
+                items={[
+                  { text: "BlackMagicProbe", value: "BM" },
+                  { text: "DapLink", value: "DAP" },
+                ]}
+                value={json.usb_mode}
+              />
             </div>
           {:catch error}
             <error>{error.message}</error>
@@ -209,24 +240,27 @@
         <div class="grid">
           {#await api_get(server + "/api/v1/system/info")}
             <div class="value-name">IP:</div>
-            <div><Spinner /></div>
+            <div class="value"><Spinner /></div>
           {:then json}
             <div class="value-name">IP:</div>
-            <div>{print_ip(json.ip)}</div>
+            <div class="value">{print_ip(json.ip)}</div>
             <div class="value-name">Mac:</div>
-            <div>{print_mac(json.mac)}</div>
+            <div class="value">{print_mac(json.mac)}</div>
             <div class="value-name">IDF ver:</div>
-            <div>{json.idf_version}</div>
+            <div class="value">{json.idf_version}</div>
             <div class="value-name">Model:</div>
-            <div>{json.model}.{json.revision} {json.cores}-core</div>
+            <div class="value">
+              {json.model}.{json.revision}
+              {json.cores}-core
+            </div>
             <div class="value-name">Min free:</div>
-            <div>{json.heap.minimum_free_bytes}</div>
+            <div class="value">{json.heap.minimum_free_bytes}</div>
             <div class="value-name">Free:</div>
-            <div>{json.heap.total_free_bytes}</div>
+            <div class="value">{json.heap.total_free_bytes}</div>
             <div class="value-name">Alloc:</div>
-            <div>{json.heap.total_allocated_bytes}</div>
+            <div class="value">{json.heap.total_allocated_bytes}</div>
             <div class="value-name">Max block:</div>
-            <div>{json.heap.largest_free_block}</div>
+            <div class="value">{json.heap.largest_free_block}</div>
           {:catch error}
             <error>{error.message}</error>
           {/await}
@@ -241,11 +275,11 @@
           <span><Spinner /></span>
         {:then json}
           <task-list>
-            <span>Name</span>
-            <span>State</span>
-            <span>Handle</span>
-            <span>Stack base</span>
-            <span>WMRK</span>
+            <span class="mobile-hidden">Name</span>
+            <span class="mobile-hidden">State</span>
+            <span class="mobile-hidden">Handle</span>
+            <span class="mobile-hidden">Stack base</span>
+            <span class="mobile-hidden">WMRK</span>
             {#each json.list.sort(function (a, b) {
               return a.number - b.number;
             }) as task}
@@ -389,5 +423,60 @@
     display: inline-grid;
     grid-template-columns: auto auto auto auto auto;
     width: 100%;
+  }
+
+  @media (max-width: 768px) {
+    task-list {
+      grid-template-columns: auto auto auto auto;
+    }
+
+    task-list > span:nth-child(5n + 3) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 600px) {
+    task-list {
+      grid-template-columns: auto auto auto;
+    }
+
+    task-list > span:nth-child(5n + 4) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .grid {
+      grid-template-columns: auto;
+      width: 100%;
+    }
+
+    .mobile-hidden {
+      display: none;
+    }
+
+    .value-name {
+      text-align: left;
+    }
+
+    .splitter {
+      background-color: #000;
+      width: 100%;
+      color: #ffa21d;
+      text-align: center;
+    }
+
+    task-list {
+      grid-template-columns: auto;
+      text-align: center;
+    }
+
+    task-list > span:nth-child(5n + 1) {
+      padding-top: 10px;
+    }
+
+    task-list > span:nth-child(5n + 5) {
+      border-bottom: 4px dashed #000;
+    }
   }
 </style>

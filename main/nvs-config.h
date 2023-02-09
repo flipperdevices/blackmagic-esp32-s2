@@ -13,13 +13,24 @@
 
 #define CFG_WIFI_MODE_AP "AP"
 #define CFG_WIFI_MODE_STA "STA"
+#define CFG_WIFI_MODE_DISABLED "Disabled"
+
+#define CFG_USB_MODE_BM "BM"
+#define CFG_USB_MODE_DAP "DAP"
+
+typedef enum {
+    UsbModeBM, // Blackmagic-probe
+    UsbModeDAP, // Dap-link
+} UsbMode;
 
 typedef enum {
     WiFiModeAP, // host of a WiFi network
     WiFiModeSTA, // connected to existing WiFi AP
+    WiFiModeDisabled, // disabled
 } WiFiMode;
 
 esp_err_t nvs_config_set_wifi_mode(WiFiMode value);
+esp_err_t nvs_config_set_usb_mode(UsbMode value);
 esp_err_t nvs_config_set_ap_ssid(const mstring_t* ssid);
 esp_err_t nvs_config_set_ap_pass(const mstring_t* pass);
 esp_err_t nvs_config_set_sta_ssid(const mstring_t* ssid);
@@ -27,6 +38,7 @@ esp_err_t nvs_config_set_sta_pass(const mstring_t* pass);
 esp_err_t nvs_config_set_hostname(const mstring_t* hostname);
 
 esp_err_t nvs_config_get_wifi_mode(WiFiMode* value);
+esp_err_t nvs_config_get_usb_mode(UsbMode* value);
 esp_err_t nvs_config_get_ap_ssid(mstring_t* ssid);
 esp_err_t nvs_config_get_ap_pass(mstring_t* pass);
 esp_err_t nvs_config_get_sta_ssid(mstring_t* ssid);

@@ -55,12 +55,6 @@ tusb_desc_device_t const blackmagic_desc_device = {
     .bNumConfigurations = 0x01,
 };
 
-// Invoked when received GET DEVICE DESCRIPTOR
-// Application return pointer to descriptor
-uint8_t const* tud_descriptor_device_cb(void) {
-    return (uint8_t const*)&blackmagic_desc_device;
-}
-
 //--------------------------------------------------------------------+
 // Configuration Descriptor
 //--------------------------------------------------------------------+
@@ -149,28 +143,13 @@ uint8_t const blackmagic_desc_hs_configuration[] = {
 };
 #endif
 
-// Invoked when received GET CONFIGURATION DESCRIPTOR
-// Application return pointer to descriptor
-// Descriptor contents must exist long enough for transfer to complete
-uint8_t const* tud_descriptor_configuration_cb(uint8_t index) {
-    (void)index; // for multiple configurations
-
-#if TUD_OPT_HIGH_SPEED
-    // Although we are highspeed, host may be fullspeed.
-    return (tud_speed_get() == TUSB_SPEED_HIGH) ? blackmagic_desc_hs_configuration :
-                                                  blackmagic_desc_fs_configuration;
-#else
-    return blackmagic_desc_fs_configuration;
-#endif
-}
-
 //--------------------------------------------------------------------+
 // String Descriptors
 //--------------------------------------------------------------------+
 
 // array of pointer to string descriptors
-char const* blackmagic_string_desc[] = {
-    (const char[]){0x09, 0x04}, // 0: is supported language is English (0x0409)
+static char* blackmagic_string_desc[] = {
+    (char[]){0x09, 0x04}, // 0: is supported language is English (0x0409)
     "Flipper Devices Inc.", // 1: Manufacturer
     "Blackmagic ESP32", // 2: Product
     "blackmagic", // 3: Serials, should use chip ID
@@ -179,12 +158,18 @@ char const* blackmagic_string_desc[] = {
     "", // 6: HIDs
 };
 
+void blackmagic_set_serial_number(const char* serial_number) {
+    blackmagic_string_desc[3] = malloc(strlen("blackmagic_") + strlen(serial_number) + 1);
+    strcpy(blackmagic_string_desc[3], "blackmagic_");
+    strcat(blackmagic_string_desc[3], serial_number);
+}
+
 #define MAX_DESC_BUF_SIZE 32
 static uint16_t _desc_str[MAX_DESC_BUF_SIZE];
 
 // Invoked when received GET STRING DESCRIPTOR request
 // Application return pointer to descriptor, whose contents must exist long enough for transfer to complete
-uint16_t const* tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
+uint16_t const* blackmagic_descriptor_string_cb(uint8_t index, uint16_t langid) {
     (void)langid;
 
     uint8_t chr_count;

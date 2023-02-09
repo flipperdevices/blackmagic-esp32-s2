@@ -9,6 +9,7 @@
 void cli_config_get(Cli* cli, mstring_t* args) {
     mstring_t* value = mstring_alloc();
     WiFiMode wifi_mode;
+    UsbMode usb_mode;
 
     nvs_config_get_ap_ssid(value);
     cli_printf(cli, "ap_ssid: %s", mstring_get_cstr(value));
@@ -33,24 +34,45 @@ void cli_config_get(Cli* cli, mstring_t* args) {
     nvs_config_get_wifi_mode(&wifi_mode);
     switch(wifi_mode) {
     case WiFiModeAP:
-        mstring_set(value, "AP");
+        mstring_set(value, CFG_WIFI_MODE_AP);
         break;
     case WiFiModeSTA:
-        mstring_set(value, "STA");
+        mstring_set(value, CFG_WIFI_MODE_STA);
+        break;
+    case WiFiModeDisabled:
+        mstring_set(value, CFG_WIFI_MODE_DISABLED);
         break;
     }
 
     cli_printf(cli, "wifi_mode: %s", mstring_get_cstr(value));
+    cli_write_eol(cli);
+
+    nvs_config_get_usb_mode(&usb_mode);
+    switch(usb_mode) {
+    case UsbModeBM:
+        mstring_set(value, CFG_USB_MODE_BM);
+        break;
+    case UsbModeDAP:
+        mstring_set(value, CFG_USB_MODE_DAP);
+        break;
+    }
+
+    cli_printf(cli, "usb_mode: %s", mstring_get_cstr(value));
 
     mstring_free(value);
 }
 
-void cli_config_set_wifi_mode_usage(Cli* cli) {
-    cli_write_str(cli, "config_set_wifi_mode <AP|STA>");
+static void cli_config_set_wifi_mode_usage(Cli* cli) {
+    cli_write_str(
+        cli,
+        "config_set_wifi_mode"
+        " <" CFG_WIFI_MODE_AP "|" CFG_WIFI_MODE_STA "|" CFG_WIFI_MODE_DISABLED ">");
     cli_write_eol(cli);
-    cli_write_str(cli, " AP (make own WiFi AP)");
+    cli_write_str(cli, " " CFG_WIFI_MODE_AP " (make own WiFi AP)");
     cli_write_eol(cli);
-    cli_write_str(cli, " STA (connect to WiFi)");
+    cli_write_str(cli, " " CFG_WIFI_MODE_STA " (connect to WiFi)");
+    cli_write_eol(cli);
+    cli_write_str(cli, " " CFG_WIFI_MODE_DISABLED " (disable WiFi)");
     cli_write_eol(cli);
 }
 
@@ -64,16 +86,58 @@ void cli_config_set_wifi_mode(Cli* cli, mstring_t* args) {
             break;
         }
 
-        if(mstring_cmp_cstr(mode, "AP") == 0) {
+        if(mstring_cmp_cstr(mode, CFG_WIFI_MODE_AP) == 0) {
             wifi_mode = WiFiModeAP;
-        } else if(mstring_cmp_cstr(mode, "STA") == 0) {
+        } else if(mstring_cmp_cstr(mode, CFG_WIFI_MODE_STA) == 0) {
             wifi_mode = WiFiModeSTA;
+        } else if(mstring_cmp_cstr(mode, CFG_WIFI_MODE_DISABLED) == 0) {
+            wifi_mode = WiFiModeDisabled;
         } else {
             cli_config_set_wifi_mode_usage(cli);
             break;
         }
 
         if(nvs_config_set_wifi_mode(wifi_mode) == ESP_OK) {
+            cli_write_str(cli, "OK");
+            cli_write_eol(cli);
+            cli_write_str(cli, "Reboot to apply");
+        } else {
+            cli_write_str(cli, "ERR");
+        }
+    } while(false);
+
+    mstring_free(mode);
+}
+
+static void cli_config_set_usb_mode_usage(Cli* cli) {
+    cli_write_str(cli, "config_set_usb_mode <" CFG_USB_MODE_BM "|" CFG_USB_MODE_DAP ">");
+    cli_write_eol(cli);
+    cli_write_str(cli, " " CFG_USB_MODE_BM " (Black Magic Probe mode)");
+    cli_write_eol(cli);
+    cli_write_str(cli, " " CFG_USB_MODE_DAP " (DAPLink mode)");
+    cli_write_eol(cli);
+}
+
+void cli_config_set_usb_mode(Cli* cli, mstring_t* args) {
+    mstring_t* mode = mstring_alloc();
+    UsbMode usb_mode;
+
+    do {
+        if(!cli_args_read_string_and_trim(args, mode)) {
+            cli_config_set_usb_mode_usage(cli);
+            break;
+        }
+
+        if(mstring_cmp_cstr(mode, CFG_USB_MODE_BM) == 0) {
+            usb_mode = UsbModeBM;
+        } else if(mstring_cmp_cstr(mode, CFG_USB_MODE_DAP) == 0) {
+            usb_mode = UsbModeDAP;
+        } else {
+            cli_config_set_usb_mode_usage(cli);
+            break;
+        }
+
+        if(nvs_config_set_usb_mode(usb_mode) == ESP_OK) {
             cli_write_str(cli, "OK");
             cli_write_eol(cli);
             cli_write_str(cli, "Reboot to apply");

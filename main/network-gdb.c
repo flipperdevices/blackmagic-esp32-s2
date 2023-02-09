@@ -16,6 +16,7 @@
 #include <lwip/netdb.h>
 
 #include "led.h"
+#include "usb.h"
 #include "delay.h"
 #include "network-gdb.h"
 #include <gdb-glue.h>
@@ -136,21 +137,28 @@ static void network_gdb_server_task(void* pvParameters) {
 
         ESP_LOGI(TAG, "Socket accepted ip address: %s", addr_str);
 
-        led_set_blue(255);
-        delay(10);
-        led_set_blue(0);
+        // continue only if DAP-Link is not connected
+        if(!dap_is_connected()) {
+            led_set_blue(255);
+            delay(10);
+            led_set_blue(0);
 
-        network_gdb.socket_id = sock;
-        network_gdb.connected = true;
+            ESP_LOGI(TAG, "DAP-Link is connected, not accepting connection");
 
-        receive_and_send_to_gdb();
+            network_gdb.socket_id = sock;
+            network_gdb.connected = true;
 
-        network_gdb.connected = false;
-        network_gdb.socket_id = -1;
+            receive_and_send_to_gdb();
 
-        led_set_blue(255);
-        delay(10);
-        led_set_blue(0);
+            network_gdb.connected = false;
+            network_gdb.socket_id = -1;
+
+            led_set_blue(255);
+            delay(10);
+            led_set_blue(0);
+        } else {
+            ESP_LOGE(TAG, "DAP-Link is connected, not accepting connection");
+        }
 
         shutdown(sock, 0);
         close(sock);

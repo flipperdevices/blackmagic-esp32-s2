@@ -4,7 +4,7 @@
 #include <freertos/task.h>
 #include <rom/ets_sys.h>
 
-#include "usb-cdc.h"
+#include "usb.h"
 #include "nvs.h"
 #include "gdb_main.h"
 #include "led.h"
@@ -67,7 +67,7 @@ void app_main(void) {
     // network_uart_server_init();
     network_gdb_server_init();
 
-    usb_cdc_init();
+    usb_init();
     cli_uart_init();
 
     // TODO uart and i2c share the same pins, need switching mechanics

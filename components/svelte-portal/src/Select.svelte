@@ -55,4 +55,10 @@
   select option {
     font-weight: normal;
   }
+
+  @media (max-width: 520px) {
+    select {
+      width: 100%;
+    }
+  }
 </style>

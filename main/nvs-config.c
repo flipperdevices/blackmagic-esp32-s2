@@ -9,6 +9,8 @@
 #define WIFI_STA_PASS_KEY "wifi_sta_pass"
 #define WIFI_HOSTNAME "wifi_hostname"
 
+#define USB_MODE_KEY "usb_mode"
+
 #define ESP_WIFI_DEFAULT_SSID "blackmagic"
 #define ESP_WIFI_DEFAULT_PASS "iamwitcher"
 #define ESP_WIFI_DEFAULT_HOSTNAME "blackmagic"
@@ -23,9 +25,30 @@ esp_err_t nvs_config_set_wifi_mode(WiFiMode value) {
     case WiFiModeSTA:
         mstring_set(mode, CFG_WIFI_MODE_STA);
         break;
+    case WiFiModeDisabled:
+        mstring_set(mode, CFG_WIFI_MODE_DISABLED);
+        break;
     }
 
     esp_err_t err = nvs_save_string(WIFI_MODE_KEY, mode);
+
+    mstring_free(mode);
+    return err;
+}
+
+esp_err_t nvs_config_set_usb_mode(UsbMode value) {
+    mstring_t* mode = mstring_alloc();
+
+    switch(value) {
+    case UsbModeBM:
+        mstring_set(mode, CFG_USB_MODE_BM);
+        break;
+    case UsbModeDAP:
+        mstring_set(mode, CFG_USB_MODE_DAP);
+        break;
+    }
+
+    esp_err_t err = nvs_save_string(USB_MODE_KEY, mode);
 
     mstring_free(mode);
     return err;
@@ -87,9 +110,26 @@ esp_err_t nvs_config_get_wifi_mode(WiFiMode* value) {
 
     if(err == ESP_OK && mstring_cmp_cstr(mode, CFG_WIFI_MODE_STA) == 0) {
         *value = WiFiModeSTA;
+    } else if(err == ESP_OK && mstring_cmp_cstr(mode, CFG_WIFI_MODE_DISABLED) == 0) {
+        *value = WiFiModeDisabled;
     } else {
         // AP mode by default
         *value = WiFiModeAP;
+    }
+
+    mstring_free(mode);
+    return err;
+}
+
+esp_err_t nvs_config_get_usb_mode(UsbMode* value) {
+    mstring_t* mode = mstring_alloc();
+    esp_err_t err = nvs_load_string(USB_MODE_KEY, mode);
+
+    if(err == ESP_OK && mstring_cmp_cstr(mode, CFG_USB_MODE_DAP) == 0) {
+        *value = UsbModeDAP;
+    } else {
+        // USB mode by default
+        *value = UsbModeBM;
     }
 
     mstring_free(mode);

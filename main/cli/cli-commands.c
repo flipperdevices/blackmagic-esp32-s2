@@ -24,6 +24,7 @@ void cli_wifi_sta_info(Cli* cli, mstring_t* args);
 
 void cli_config_get(Cli* cli, mstring_t* args);
 void cli_config_set_wifi_mode(Cli* cli, mstring_t* args);
+void cli_config_set_usb_mode(Cli* cli, mstring_t* args);
 void cli_config_set_ap_pass(Cli* cli, mstring_t* args);
 void cli_config_set_ap_ssid(Cli* cli, mstring_t* args);
 void cli_config_set_sta_pass(Cli* cli, mstring_t* args);
@@ -53,6 +54,11 @@ const CliItem cli_items[] = {
         .desc =
             "set Wi-Fi mode, AP (own access point) or STA (join another network), requires a reboot to apply",
         .callback = cli_config_set_wifi_mode,
+    },
+    {
+        .name = "config_set_usb_mode",
+        .desc = "set USB mode, requires a reboot to apply",
+        .callback = cli_config_set_usb_mode,
     },
     {
         .name = "config_set_ap_pass",
