@@ -6,20 +6,6 @@ set(BM_SOURCES
     # ${PLATFORM_DIR}/custom/swd-spi-tap.c
     ${BM_DIR}/src/platforms/common/swdptap.c
     ${BM_DIR}/src/platforms/common/jtagtap.c
-
-    # ${BM_DIR}/src/gdb_main.c
-    # ${BM_DIR}/src/command.c
-    # ${BM_DIR}/src/crc32.c
-    # ${BM_DIR}/src/exception.c
-    # ${BM_DIR}/src/gdb_hostio.c
-    # ${BM_DIR}/src/gdb_main.c
-    # ${BM_DIR}/src/gdb_packet.c
-    # ${BM_DIR}/src/remote.c
-    # ${BM_DIR}/src/hex_utils.c
-    # ${BM_DIR}/src/main.c
-    # ${BM_DIR}/src/morse.c
-
-    # TODO move to project
     ${PLATFORM_DIR}/platform.c
     ${PLATFORM_DIR}/gdb-glue.c
 )

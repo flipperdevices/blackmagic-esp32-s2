@@ -22,8 +22,8 @@ void led_set_blue(uint8_t value);
     { led_set_green(255 * state); }
 #define SET_IDLE_STATE(state) \
     { led_set_blue(255 * state); }
-#define SET_ERROR_STATE(x) \
-    { led_set_red(255); }
+#define SET_ERROR_STATE(state) \
+    { led_set_red(255 * state); }
 
 #define TMS_SET_MODE() \
     do {               \
