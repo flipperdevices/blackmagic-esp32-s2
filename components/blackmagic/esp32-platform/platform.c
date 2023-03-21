@@ -103,12 +103,12 @@ int platform_hwversion(void) {
 }
 
 // set timeout
-void platform_timeout_set(platform_timeout* t, uint32_t ms) {
+void platform_timeout_set(platform_timeout_s* t, uint32_t ms) {
     t->time = platform_time_ms() + ms;
 }
 
 // check timeout
-bool platform_timeout_is_expired(platform_timeout* t) {
+bool platform_timeout_is_expired(const platform_timeout_s* t) {
     return platform_time_ms() > t->time;
 }
 
@@ -119,4 +119,16 @@ void platform_max_frequency_set(uint32_t freq) {
 // get interface freq
 uint32_t platform_max_frequency_get(void) {
     return 0;
+}
+
+void platform_nrst_set_val(bool assert) {
+    (void)assert;
+}
+
+bool platform_nrst_get_val() {
+    return false;
+}
+
+void platform_target_clk_output_enable(bool enable) {
+    (void)enable;
 }
