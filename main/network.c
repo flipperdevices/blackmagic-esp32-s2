@@ -151,7 +151,7 @@ static bool network_connect_ap(mstring_t* ap_ssid, mstring_t* ap_pass) {
     return result;
 }
 
-void network_post_init(void) {
+void network_hostnames_init(void) {
     mstring_t* hostname = mstring_alloc();
 
     ESP_LOGI(TAG, "init mdns");
@@ -190,6 +190,8 @@ WiFiMode network_init(void) {
 
     nvs_config_get_wifi_mode(&wifi_mode);
 
+    network_hostnames_init();
+
     switch(wifi_mode) {
     case WiFiModeAP:
         nvs_config_get_ap_ssid(ssid);
@@ -207,8 +209,6 @@ WiFiMode network_init(void) {
 
     mstring_free(ssid);
     mstring_free(pass);
-
-    network_post_init();
 
     return wifi_mode;
 }
