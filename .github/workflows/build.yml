@@ -1,6 +1,6 @@
 name: 'Build'
 
-on: 
+on:
   push:
     branches:
       - dev
@@ -13,78 +13,53 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-      - name: Store UID
-        id: uid
-        run: |
-          id=`id -u $USER`
-          echo ::set-output name=id::$id
+      - name: 'Wipe workspace'
+        run: find ./ -mount -maxdepth 1 -exec rm -rf {} \;
 
-      - name: Cleanup workspace
-        uses: AutoModality/action-clean@v1
-
-      - name: Decontaminate previous build leftovers
-        run: |
-          if [ -d .git ]
-          then
-            git submodule status \
-              || git checkout `git rev-list --max-parents=0 HEAD | tail -n 1`
-          fi
-
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: 'Checkout code'
+        uses: actions/checkout@v3
         with:
           submodules: recursive
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: Generate suffix and folder name
+      - name: 'Get commit details'
         id: names
         run: |
-          REF=${{ github.ref }}
           if [[ ${{ github.event_name }} == 'pull_request' ]]; then
-            REF=${{ github.head_ref }}
-          fi
-          BRANCH_OR_TAG=${REF#refs/*/}
-          SHA=$(git rev-parse --short HEAD)
-          
-          if [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
-            SUFFIX=${BRANCH_OR_TAG//\//_}
+            TYPE="pull"
+          elif [[ "${{ github.ref }}" == "refs/tags/"* ]]; then
+            TYPE="tag"
           else
-            SUFFIX=${BRANCH_OR_TAG//\//_}-$(date +'%d%m%Y')-${SHA}
+            TYPE="other"
           fi
+          python3 scripts/get_env.py "--event_file=${{ github.event_path }}" "--type=$TYPE"
+          echo "event_type=$TYPE" >> $GITHUB_OUTPUT
 
-          echo "::set-output name=artifacts-path::${BRANCH_OR_TAG}"
-          echo "::set-output name=suffix::${SUFFIX}"
-
-      - name: Setup node
+      - name: 'Setup node'
         uses: actions/setup-node@v2
         with:
           node-version: '17'
           cache: 'npm'
           cache-dependency-path: components/svelte-portal
 
-      - name: Install node dependencies
+      - name: 'Install node dependencies'
         run: npm install
         working-directory: components/svelte-portal
 
-      - name: Build captive portal
+      - name: 'Build captive portal'
         run: npm run build
         working-directory: components/svelte-portal
 
-      - name: Build firmware
+      - name: 'Build firmware'
         uses: Intake-Health/esp-idf-ci-action@release-v4.4
 
-      - name: Fix ownership
-        uses: peter-murray/reset-workspace-ownership-action@v1
-        with:
-          user_id: ${{ steps.uid.outputs.id }}
-
-      - name: Make artifacts directory
+      - name: 'Make artifacts directory'
         if: ${{ !github.event.pull_request.head.repo.fork }}
         run: |
-          test -d artifacts && rm -rf artifacts || true
+          rm -rf artifacts
           mkdir artifacts
 
-      - name: Move upload files
+      - name: 'Move upload files'
         if: ${{ !github.event.pull_request.head.repo.fork }}
         run: |
           mv build/bootloader/bootloader.bin artifacts/
@@ -92,25 +67,23 @@ jobs:
           mv build/blackmagic.bin artifacts/
           cp scripts/flash_nix.sh artifacts/
 
-      - name: Generate flash.command file
+      - name: 'Generate flash.command file'
         if: ${{ !github.event.pull_request.head.repo.fork }}
         run: |
-          echo "esptool.py -p (PORT) -b 460800 --before default_reset --after hard_reset --chip esp32s2  write_flash $(tr '\n' ' ' < build/flash_args)" > artifacts/flash.command
+          echo "esptool.py -p (PORT) -b 460800 --before default_reset --after hard_reset --chip esp32s2 write_flash $(tr '\n' ' ' < build/flash_args)" > artifacts/flash.command
           sed -i 's/partition_table\///g' artifacts/flash.command
           sed -i 's/bootloader\///g' artifacts/flash.command
 
-      - name: Upload artifacts to update server
+      - name: 'Generate archive'
         if: ${{ !github.event.pull_request.head.repo.fork }}
-        uses: burnett01/rsync-deployments@5.1
-        with:
-          switches: -avzP --delete --mkpath
-          path: artifacts/
-          remote_path: ${{ secrets.RSYNC_DEPLOY_BASE_PATH }}${{steps.names.outputs.artifacts-path}}/
-          remote_host: ${{ secrets.RSYNC_DEPLOY_HOST }}
-          remote_port: ${{ secrets.RSYNC_DEPLOY_PORT }}
-          remote_user: ${{ secrets.RSYNC_DEPLOY_USER }}
-          remote_key: ${{ secrets.RSYNC_DEPLOY_KEY }}
-
-      - name: Cleanup artifacts
         run: |
-          rm -rf artifacts
+          tar -cvf blackmagic-firmware-s2-full-${SUFFIX}.tgz -C artifacts/ .
+
+      - name: 'Upload artifacts to update server'
+        if: ${{ !github.event.pull_request.head.repo.fork }}
+        run: |
+          FILES=$(for CUR in $(ls artifacts/); do echo "-F files=@artifacts/$CUR"; done)
+          curl --fail -L -H "Token: ${{ secrets.INDEXER_TOKEN }}" \
+              -F "branch=${BRANCH_NAME}" \
+              ${FILES[@]} \
+              "${{ secrets.INDEXER_UPLOAD_URL }}"
