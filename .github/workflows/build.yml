@@ -13,6 +13,11 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
+      - name: 'Store UID'
+        id: uid
+        run: |
+          echo id="$(id -u $USER)" >> $GITHUB_OUTPUT
+
       - name: 'Wipe workspace'
         run: find ./ -mount -maxdepth 1 -exec rm -rf {} \;
 
@@ -57,6 +62,11 @@ jobs:
 
       - name: 'Build firmware'
         uses: Intake-Health/esp-idf-ci-action@release-v4.4
+
+      - name: 'Fix ownership'
+        uses: peter-murray/reset-workspace-ownership-action@v1
+        with:
+          user_id: ${{ steps.uid.outputs.id }}
 
       - name: 'Make artifacts directory'
         if: ${{ !github.event.pull_request.head.repo.fork }}
