@@ -93,7 +93,7 @@ jobs:
         if: ${{ !github.event.pull_request.head.repo.fork }}
         run: |
           mkdir -p "artifacts-archive"
-          tar -cvf artifacts-archive/blackmagic-firmware-s2-full-${SUFFIX}.tgz -C artifacts/ .
+          tar -czvf artifacts-archive/blackmagic-firmware-s2-full-${SUFFIX}.tgz -C artifacts/ .
 
       - name: 'Upload artifacts to update server'
         if: ${{ !github.event.pull_request.head.repo.fork }}
