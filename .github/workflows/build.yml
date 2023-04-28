@@ -46,7 +46,7 @@ jobs:
           echo "event_type=$TYPE" >> $GITHUB_OUTPUT
 
       - name: 'Setup node'
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '17'
           cache: 'npm'
