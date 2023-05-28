@@ -9,6 +9,7 @@
 #include <rom/ets_sys.h>
 #include <hal/gpio_ll.h>
 #include <esp_rom_gpio.h>
+#include <esp_attr.h>
 
 /*- Definitions -------------------------------------------------------------*/
 // #define DAP_CONFIG_ENABLE_JTAG
