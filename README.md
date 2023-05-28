@@ -13,7 +13,7 @@ You must recursively clone the submodules, which `--recursive` will do for you. 
 
 # Develop with ESP-IDF
 
-Set up __ESP-IDF v4.4__ following [Espressif's instructions](https://docs.espressif.com/projects/esp-idf/en/release-v4.4/esp32/get-started/index.html). Make sure `idf.py` is in your PATH and you can successfully run the program.
+Set up __ESP-IDF v5.0.2__ following [Espressif's instructions](https://docs.espressif.com/projects/esp-idf/en/v5.0.2/esp32/get-started/index.html). Make sure `idf.py` is in your PATH and you can successfully run the program.
 
 ## Build with ESP-IDF
 
