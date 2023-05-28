@@ -35,14 +35,15 @@
 static WiFiMode wifi_mode = WiFiModeSTA;
 
 uint32_t network_get_ip(void) {
-    tcpip_adapter_ip_info_t ip_info;
-    if(wifi_mode == WiFiModeSTA) {
-        tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
-    } else {
-        tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-    }
+    // tcpip_adapter_ip_info_t ip_info;
+    // if(wifi_mode == WiFiModeSTA) {
+    //     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+    // } else {
+    //     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+    // }
 
-    return ip_info.ip.addr;
+    // return ip_info.ip.addr;
+    return 0;
 }
 
 static void
