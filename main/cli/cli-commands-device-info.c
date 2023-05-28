@@ -5,6 +5,7 @@
 #include <gdb-glue.h>
 #include <esp_mac.h>
 #include <esp_system.h>
+#include "esp_chip_info.h"
 
 void cli_device_info(Cli* cli, mstring_t* args) {
     uint8_t mac_addr[8] = {0};

@@ -3,6 +3,7 @@
 #include "network.h"
 #include <esp_log.h>
 #include <esp_wifi.h>
+#include <esp_mac.h>
 #include <freertos/event_groups.h>
 #include <string.h>
 #include <m-string.h>
