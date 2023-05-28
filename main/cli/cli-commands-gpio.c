@@ -169,7 +169,7 @@ void cli_gpio_set(Cli* cli, mstring_t* args) {
         }
 
         gpio_config_t io_conf;
-        io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+        io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_OUTPUT;
         io_conf.pin_bit_mask = 0;
         io_conf.pull_down_en = 0;
@@ -225,7 +225,7 @@ void cli_gpio_get(Cli* cli, mstring_t* args) {
         }
 
         gpio_config_t io_conf;
-        io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+        io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_INPUT;
         io_conf.pin_bit_mask = 0;
         io_conf.pull_down_en = 0;
