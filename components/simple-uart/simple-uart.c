@@ -1,10 +1,12 @@
 #include <driver/gpio.h>
+#include <driver/uart.h>
 #include <driver/periph_ctrl.h>
 #include <hal/uart_ll.h>
 #include <hal/uart_hal.h>
 
 #include <hal/gpio_hal.h>
 #include <esp_rom_gpio.h>
+#include <esp_check.h>
 
 #include "simple-uart.h"
 
@@ -173,7 +175,12 @@ static void simple_uart_isr(void* arg) {
 }
 
 void simple_uart_set_baud_rate(uint8_t uart_num, uint32_t baud_rate) {
-    uart_hal_set_baudrate(UART_HAL(uart_num), baud_rate);
+    uart_sclk_t src_clk;
+    uint32_t sclk_freq;
+
+    uart_hal_get_sclk(&(uart_context[uart_num].hal), &src_clk);
+    uart_get_sclk_freq(src_clk, &sclk_freq);
+    uart_hal_set_baudrate(UART_HAL(uart_num), baud_rate, sclk_freq);
 }
 
 void simple_uart_set_stop_bits(uint8_t uart_num, uart_stop_bits_t stop_bits) {

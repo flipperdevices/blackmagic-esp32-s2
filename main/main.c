@@ -35,7 +35,7 @@ void gdb_application_thread(void* pvParameters) {
 void pins_init() {
     gpio_config_t io_conf;
     // disable interrupt
-    io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+    io_conf.intr_type = GPIO_INTR_DISABLE;
     // set as output mode
     io_conf.mode = GPIO_MODE_OUTPUT;
     // bit mask of the pins that you want to set

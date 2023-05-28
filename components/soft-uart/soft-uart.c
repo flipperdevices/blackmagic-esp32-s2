@@ -1,7 +1,7 @@
 #include "soft-uart.h"
 #include <string.h>
 #include <freertos/portmacro.h>
-#include <esp32/clk.h>
+#include "esp_private/esp_clk.h"
 #include <driver/gpio.h>
 
 struct SoftUart {
@@ -56,7 +56,7 @@ SoftUart* soft_uart_init(uint32_t baudrate, uint8_t tx_pin) {
 
     uart->bit_time = (esp_clk_cpu_freq() / uart->baudrate);
 
-    gpio_pad_select_gpio(uart->tx_pin);
+    esp_rom_gpio_pad_select_gpio(uart->tx_pin);
     gpio_set_direction(uart->tx_pin, GPIO_MODE_OUTPUT);
     gpio_set_level(uart->tx_pin, !uart->invert);
     return uart;

@@ -63,8 +63,12 @@ jobs:
         run: npm run build
         working-directory: components/svelte-portal
 
-      - name: 'Build firmware'
-        uses: Intake-Health/esp-idf-ci-action@release-v4.4
+      - name: esp-idf build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.0.2
+          target: esp32s2
+          path: './'
 
       - name: 'Fix ownership'
         uses: peter-murray/reset-workspace-ownership-action@v1

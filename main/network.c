@@ -3,6 +3,7 @@
 #include "network.h"
 #include <esp_log.h>
 #include <esp_wifi.h>
+#include <esp_mac.h>
 #include <freertos/event_groups.h>
 #include <string.h>
 #include <m-string.h>
@@ -33,16 +34,24 @@
 
 static WiFiMode wifi_mode = WiFiModeSTA;
 
-uint32_t network_get_ip(void) {
-    tcpip_adapter_ip_info_t ip_info;
-    if(wifi_mode == WiFiModeSTA) {
-        tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+uint32_t network_get_ip()
+{
+    esp_netif_ip_info_t ip_info;
+    esp_netif_t *netif = NULL;
+    wifi_mode_t wifi_mode;
+
+    esp_wifi_get_mode(&wifi_mode);
+
+    if (wifi_mode == WIFI_MODE_STA) {
+        netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
     } else {
-        tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+        netif = esp_netif_get_handle_from_ifkey("WIFI_AP_DEF");
     }
 
+    esp_netif_get_ip_info(netif, &ip_info);
     return ip_info.ip.addr;
 }
+
 
 static void
     sta_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data) {

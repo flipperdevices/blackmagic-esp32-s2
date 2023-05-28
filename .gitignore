@@ -3,3 +3,4 @@
 /sdkconfig.old
 /main/wifi-credentials.h
 .DS_Store
+managed_components

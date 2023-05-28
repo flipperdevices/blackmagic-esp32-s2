@@ -295,7 +295,12 @@ void cli_nvs_dump(Cli* cli, mstring_t* args) {
         cli_write_eol(cli);
 
         do {
-            nvs_iterator_t it = nvs_entry_find(partitions[i], NULL, NVS_TYPE_ANY);
+            nvs_iterator_t it;
+            if(nvs_entry_find(partitions[i], NULL, NVS_TYPE_ANY, &it) != ESP_OK) {
+                cli_write_str(cli, "ERR");
+                cli_write_eol(cli);
+                break;
+            }
             while(it != NULL) {
                 nvs_entry_info_t info;
                 nvs_entry_info(it, &info);

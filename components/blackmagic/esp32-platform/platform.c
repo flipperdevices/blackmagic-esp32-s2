@@ -8,6 +8,7 @@
 
 #include <hal/gpio_ll.h>
 #include <esp_rom_gpio.h>
+#include "esp_timer.h"
 
 uint32_t swd_delay_cnt = 0;
 // static const char* TAG = "gdb-platform";

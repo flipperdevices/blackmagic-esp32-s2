@@ -5,11 +5,14 @@
 #include <cJSON.h>
 #include <esp_wifi.h>
 #include <esp_system.h>
+#include <esp_chip_info.h>
+#include <esp_mac.h>
 #include "network.h"
 #include "nvs.h"
 #include "nvs-config.h"
 #include "led.h"
 #include "helpers.h"
+
 
 #define TAG "network-http"
 #define JSON_ERROR(error_text) "{\"error\": \"" error_text "\"}"
