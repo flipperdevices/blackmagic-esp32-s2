@@ -418,7 +418,11 @@ void usb_glue_cdc_send(const uint8_t* buf, size_t len, bool flush) {
 }
 
 size_t usb_glue_cdc_receive(uint8_t* buf, size_t len) {
-    return tud_cdc_n_read(BlackmagicCDCTypeUART, buf, len);
+    if(usb_device_type == USBDeviceTypeDualCDC) {
+        return tud_cdc_n_read(BlackmagicCDCTypeUART, buf, len);
+    } else {
+        return tud_cdc_n_read(DapCDCTypeUART, buf, len);
+    }
 }
 
 void usb_glue_gdb_send(const uint8_t* buf, size_t len, bool flush) {
