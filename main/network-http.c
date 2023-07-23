@@ -272,13 +272,24 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
     cJSON_AddNumberToObject(root, "revision", chip_info.revision);
     cJSON_AddNumberToObject(root, "cores", chip_info.cores);
 
+    // main heap
     multi_heap_info_t info;
-    heap_caps_get_info(&info, MALLOC_CAP_DEFAULT);
+    heap_caps_get_info(&info, MALLOC_CAP_INTERNAL);
+
     cJSON* heap = cJSON_AddObjectToObject(root, "heap");
     cJSON_AddNumberToObject(heap, "total_free_bytes", info.total_free_bytes);
     cJSON_AddNumberToObject(heap, "total_allocated_bytes", info.total_allocated_bytes);
     cJSON_AddNumberToObject(heap, "largest_free_block", info.largest_free_block);
     cJSON_AddNumberToObject(heap, "minimum_free_bytes", info.minimum_free_bytes);
+
+    // psram heap
+    heap_caps_get_info(&info, MALLOC_CAP_SPIRAM);
+
+    cJSON* psram_heap = cJSON_AddObjectToObject(root, "psram_heap");
+    cJSON_AddNumberToObject(psram_heap, "total_free_bytes", info.total_free_bytes);
+    cJSON_AddNumberToObject(psram_heap, "total_allocated_bytes", info.total_allocated_bytes);
+    cJSON_AddNumberToObject(psram_heap, "largest_free_block", info.largest_free_block);
+    cJSON_AddNumberToObject(psram_heap, "minimum_free_bytes", info.minimum_free_bytes);
 
     // ip addr
     cJSON_AddNumberToObject(root, "ip", network_get_ip());
