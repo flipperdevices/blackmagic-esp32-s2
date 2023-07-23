@@ -17,6 +17,12 @@
 
 #define WIFI_SCAN_SIZE 20
 
+static httpd_handle_t server = NULL;
+typedef struct {
+    httpd_handle_t hd;
+    int fd;
+} async_resp_arg;
+
 static const char* get_auth_mode(int authmode) {
     switch(authmode) {
     case WIFI_AUTH_OPEN:
@@ -641,6 +647,156 @@ err_fail:
     return ESP_FAIL;
 }
 
+/*************** UART ***************/
+
+static void ws_async_send(void* arg) {
+    httpd_ws_frame_t ws_pkt;
+    async_resp_arg* resp_arg = arg;
+    httpd_handle_t hd = resp_arg->hd;
+
+    memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+    ws_pkt.payload = (uint8_t*)"Hello!";
+    ws_pkt.len = strlen((char*)ws_pkt.payload);
+    ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+
+    static size_t max_clients = CONFIG_LWIP_MAX_LISTENING_TCP;
+    size_t fds = max_clients;
+    int client_fds[max_clients];
+
+    esp_err_t ret = httpd_get_client_list(server, &fds, client_fds);
+
+    if(ret != ESP_OK) {
+        return;
+    }
+
+    for(int i = 0; i < fds; i++) {
+        int client_info = httpd_ws_get_fd_info(server, client_fds[i]);
+        if(client_info == HTTPD_WS_CLIENT_WEBSOCKET) {
+            httpd_ws_send_frame_async(hd, client_fds[i], &ws_pkt);
+        }
+    }
+    free(resp_arg);
+}
+
+static esp_err_t trigger_async_send(httpd_handle_t handle, httpd_req_t* req) {
+    async_resp_arg* resp_arg = malloc(sizeof(async_resp_arg));
+    resp_arg->hd = req->handle;
+    resp_arg->fd = httpd_req_to_sockfd(req);
+    return httpd_queue_work(handle, ws_async_send, resp_arg);
+}
+
+#define WS_CLIENTS_MAX 10
+#define WS_CLIENT_INVALID -1
+static int ws_clients[WS_CLIENTS_MAX] = {0};
+
+static void ws_clients_init() {
+    for(int i = 0; i < WS_CLIENTS_MAX; i++) {
+        ws_clients[i] = WS_CLIENT_INVALID;
+    }
+}
+
+static bool ws_client_add(int fd) {
+    for(int i = 0; i < WS_CLIENTS_MAX; i++) {
+        if(ws_clients[i] == WS_CLIENT_INVALID) {
+            ws_clients[i] = fd;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool ws_client_remove(int fd) {
+    for(int i = 0; i < WS_CLIENTS_MAX; i++) {
+        if(ws_clients[i] == fd) {
+            ws_clients[i] = WS_CLIENT_INVALID;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static size_t ws_client_count() {
+    size_t count = 0;
+    for(int i = 0; i < WS_CLIENTS_MAX; i++) {
+        if(ws_clients[i] != WS_CLIENT_INVALID) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
+static void client_ping_task(void* pvParameters) {
+    while(true) {
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        if(ws_client_count() == 0) {
+            continue;
+        }
+
+        httpd_ws_frame_t ws_pkt;
+        memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+        ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+        ws_pkt.payload = (uint8_t*)"ping";
+        ws_pkt.len = strlen((char*)ws_pkt.payload);
+
+        for(int i = 0; i < WS_CLIENTS_MAX; i++) {
+            if(ws_clients[i] == WS_CLIENT_INVALID) {
+                continue;
+            }
+            int client_info = httpd_ws_get_fd_info(server, ws_clients[i]);
+            if(client_info == HTTPD_WS_CLIENT_WEBSOCKET) {
+                httpd_ws_send_frame_async(server, ws_clients[i], &ws_pkt);
+            }
+        }
+
+        ESP_LOGI(TAG, "ping sent");
+    }
+}
+
+static esp_err_t uart_websocket_handler(httpd_req_t* req) {
+    if(req->method == HTTP_GET) {
+        ESP_LOGI(TAG, "Handshake done, the new connection was opened");
+        ws_client_add(httpd_req_to_sockfd(req));
+        return ESP_OK;
+    }
+
+    httpd_ws_frame_t ws_pkt;
+    uint8_t* buf = NULL;
+    memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+    ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+    esp_err_t ret = httpd_ws_recv_frame(req, &ws_pkt, 0);
+    if(ret != ESP_OK) {
+        ESP_LOGE(TAG, "httpd_ws_recv_frame failed to get frame len with %d", ret);
+        return ret;
+    }
+
+    if(ws_pkt.len) {
+        buf = calloc(1, ws_pkt.len + 1);
+        if(buf == NULL) {
+            ESP_LOGE(TAG, "Failed to calloc memory for buf");
+            return ESP_ERR_NO_MEM;
+        }
+        ws_pkt.payload = buf;
+        ret = httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
+        if(ret != ESP_OK) {
+            ESP_LOGE(TAG, "httpd_ws_recv_frame failed with %d", ret);
+            free(buf);
+            return ret;
+        }
+        ESP_LOGI(TAG, "Got packet with message: %s", ws_pkt.payload);
+    }
+
+    ESP_LOGI(TAG, "frame len is %d", ws_pkt.len);
+
+    if(ws_pkt.type == HTTPD_WS_TYPE_TEXT && strcmp((char*)ws_pkt.payload, "toggle") == 0) {
+        free(buf);
+        return trigger_async_send(req->handle, req);
+    }
+    return ESP_OK;
+}
+
 const httpd_uri_t uri_handlers[] = {
 
     /*************** SYSTEM ***************/
@@ -648,59 +804,91 @@ const httpd_uri_t uri_handlers[] = {
     {.uri = "/api/v1/system/ping",
      .method = HTTP_GET,
      .handler = system_ping_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     {.uri = "/api/v1/system/tasks",
      .method = HTTP_GET,
      .handler = system_tasks_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     {.uri = "/api/v1/system/info",
      .method = HTTP_GET,
      .handler = system_info_get_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     {.uri = "/api/v1/system/reboot",
      .method = HTTP_POST,
      .handler = system_reboot,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     /*************** GPIO ***************/
 
     {.uri = "/api/v1/gpio/led",
      .method = HTTP_POST,
      .handler = gpio_led_set_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     /*************** WIFI ***************/
 
     {.uri = "/api/v1/wifi/list",
      .method = HTTP_GET,
      .handler = wifi_list_get_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     {.uri = "/api/v1/wifi/set_credentials",
      .method = HTTP_POST,
      .handler = wifi_set_credentials_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     {.uri = "/api/v1/wifi/get_credentials",
      .method = HTTP_GET,
      .handler = wifi_get_credentials_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
+
+    /*************** UART ***************/
+
+    {.uri = "/api/v1/uart/websocket",
+     .method = HTTP_GET,
+     .handler = uart_websocket_handler,
+     .user_ctx = NULL,
+     .is_websocket = true},
 
     /*************** HTTP ***************/
 
-    {.uri = "/*", .method = HTTP_GET, .handler = http_common_get_handler, .user_ctx = NULL},
+    {.uri = "/*",
+     .method = HTTP_GET,
+     .handler = http_common_get_handler,
+     .user_ctx = NULL,
+     .is_websocket = false},
 };
+
+static esp_err_t httpd_open_fn(httpd_handle_t hd, int sockfd) {
+    return ESP_OK;
+}
+
+static void httpd_close_fn(httpd_handle_t hd, int sockfd) {
+    ws_client_remove(sockfd);
+    close(sockfd);
+}
 
 void network_http_server_init(void) {
     ESP_LOGI(TAG, "init rest server");
 
-    httpd_handle_t server = NULL;
+    ws_clients_init();
+
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.max_uri_handlers = COUNT_OF(uri_handlers);
     config.uri_match_fn = httpd_uri_match_wildcard;
+    config.open_fn = httpd_open_fn;
+    config.close_fn = httpd_close_fn;
 
     ESP_LOGI(TAG, "starting http server");
     if(httpd_start(&server, &config) != ESP_OK) {
@@ -713,4 +901,6 @@ void network_http_server_init(void) {
     }
 
     ESP_LOGI(TAG, "init rest server done");
+
+    xTaskCreate(client_ping_task, "client_ping_task", 4096, NULL, 5, NULL);
 }
