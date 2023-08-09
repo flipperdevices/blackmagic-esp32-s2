@@ -16,7 +16,6 @@
     padding: 0 5px 0 5px;
     box-shadow: none;
     border-radius: 0;
-    display: inline-block;
     max-width: 100%;
   }
 
