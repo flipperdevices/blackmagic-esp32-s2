@@ -10,6 +10,7 @@
 #include "nvs-config.h"
 #include "led.h"
 #include "helpers.h"
+#include "usb-uart.h"
 
 #define TAG "network-http"
 #define JSON_ERROR(error_text) "{\"error\": \"" error_text "\"}"
@@ -659,6 +660,21 @@ err_fail:
 }
 
 /*************** UART ***************/
+#include <stream_buffer.h>
+
+#define WEBSOCKET_STREAM_BUFFER_SIZE_BYTES 1024 * 256
+static uint8_t websocket_stream_storage[WEBSOCKET_STREAM_BUFFER_SIZE_BYTES + 1] EXT_RAM_ATTR;
+static StaticStreamBuffer_t websocket_stream_buffer_struct;
+static StreamBufferHandle_t websocket_stream = NULL;
+
+void network_http_uart_write_data(uint8_t* data, size_t size) {
+    if(websocket_stream == NULL) {
+        return;
+    }
+
+    size_t written = xStreamBufferSend(websocket_stream, data, size, 0);
+    (void)written;
+}
 
 static void ws_async_send(void* arg) {
     httpd_ws_frame_t ws_pkt;
@@ -739,18 +755,22 @@ static size_t ws_client_count() {
     return count;
 }
 
-static void client_ping_task(void* pvParameters) {
+static void websocket_read_task(void* pvParameters) {
+#define WEBSOCKET_READ_BUFFER_SIZE 128
+    uint8_t* buffer = malloc(WEBSOCKET_READ_BUFFER_SIZE);
+
     while(true) {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        if(ws_client_count() == 0) {
+        size_t read = xStreamBufferReceive(
+            websocket_stream, buffer, WEBSOCKET_READ_BUFFER_SIZE, portMAX_DELAY);
+        if(ws_client_count() == 0 || read == 0) {
             continue;
         }
 
         httpd_ws_frame_t ws_pkt;
         memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
-        ws_pkt.type = HTTPD_WS_TYPE_TEXT;
-        ws_pkt.payload = (uint8_t*)"ping";
-        ws_pkt.len = strlen((char*)ws_pkt.payload);
+        ws_pkt.type = HTTPD_WS_TYPE_BINARY;
+        ws_pkt.payload = buffer;
+        ws_pkt.len = read;
 
         for(int i = 0; i < WS_CLIENTS_MAX; i++) {
             if(ws_clients[i] == WS_CLIENT_INVALID) {
@@ -762,8 +782,112 @@ static void client_ping_task(void* pvParameters) {
             }
         }
 
-        ESP_LOGI(TAG, "ping sent");
+        // ESP_LOGI(TAG, "ping sent");
     }
+}
+
+static esp_err_t uart_get_config_handler(httpd_req_t* req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_type(req, "application/json");
+    cJSON* root = cJSON_CreateObject();
+
+    UsbUartConfig config = usb_uart_get_line_coding();
+
+    cJSON_AddNumberToObject(root, "bit_rate", config.bit_rate);
+    cJSON_AddNumberToObject(root, "stop_bits", config.stop_bits);
+    cJSON_AddNumberToObject(root, "parity", config.parity);
+    cJSON_AddNumberToObject(root, "data_bits", config.data_bits);
+
+    const char* json_text = cJSON_Print(root);
+    httpd_resp_sendstr(req, json_text);
+    free((void*)json_text);
+    cJSON_Delete(root);
+    return ESP_OK;
+}
+
+static esp_err_t uart_set_config_handler(httpd_req_t* req) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    int total_length = req->content_len;
+    int current_length = 0;
+    char* buffer = malloc(256);
+    const char* error_text = JSON_ERROR("unknown error");
+    int received = 0;
+    uint32_t uart_bit_rate = 0;
+    uint8_t uart_stop_bits = 0;
+    uint8_t uart_parity = 0;
+    uint8_t uart_data_bits = 0;
+    bool error = false;
+
+    httpd_resp_set_type(req, "application/json");
+
+    if(total_length >= 256) {
+        error_text = JSON_ERROR("request too long");
+        goto err_fail;
+    }
+
+    while(current_length < total_length) {
+        received = httpd_req_recv(req, buffer + current_length, total_length);
+        if(received <= 0) {
+            error_text = JSON_ERROR("cannot receive request data");
+            goto err_fail;
+        }
+        current_length += received;
+    }
+    buffer[total_length] = '\0';
+
+    cJSON* root = cJSON_Parse(buffer);
+    cJSON* element;
+    element = cJSON_GetObjectItem(root, "bit_rate");
+    if(element != NULL && element->type == cJSON_Number) {
+        uart_bit_rate = element->valuedouble;
+    } else {
+        error = true;
+    }
+
+    element = cJSON_GetObjectItem(root, "stop_bits");
+    if(element != NULL && element->type == cJSON_Number) {
+        uart_stop_bits = element->valuedouble;
+    } else {
+        error = true;
+    }
+
+    element = cJSON_GetObjectItem(root, "parity");
+    if(element != NULL && element->type == cJSON_Number) {
+        uart_parity = element->valuedouble;
+    } else {
+        error = true;
+    }
+
+    element = cJSON_GetObjectItem(root, "data_bits");
+    if(element != NULL && element->type == cJSON_Number) {
+        uart_data_bits = element->valuedouble;
+    } else {
+        error = true;
+    }
+    cJSON_Delete(root);
+
+    if(error) {
+        error_text = JSON_ERROR("expected [bit_rate], [stop_bits], [parity], [data_bits]");
+        goto err_fail;
+    }
+
+    UsbUartConfig config = {
+        .bit_rate = uart_bit_rate,
+        .stop_bits = uart_stop_bits,
+        .parity = uart_parity,
+        .data_bits = uart_data_bits,
+    };
+
+    usb_uart_set_line_coding(config);
+
+    httpd_resp_sendstr(req, JSON_RESULT("OK"));
+    free(buffer);
+    return ESP_OK;
+
+err_fail:
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, error_text);
+    free(buffer);
+    return ESP_FAIL;
 }
 
 static esp_err_t uart_websocket_handler(httpd_req_t* req) {
@@ -866,6 +990,18 @@ const httpd_uri_t uri_handlers[] = {
 
     /*************** UART ***************/
 
+    {.uri = "/api/v1/uart/get_config",
+     .method = HTTP_GET,
+     .handler = uart_get_config_handler,
+     .user_ctx = NULL,
+     .is_websocket = false},
+
+    {.uri = "/api/v1/uart/set_config",
+     .method = HTTP_GET,
+     .handler = uart_set_config_handler,
+     .user_ctx = NULL,
+     .is_websocket = false},
+
     {.uri = "/api/v1/uart/websocket",
      .method = HTTP_GET,
      .handler = uart_websocket_handler,
@@ -893,7 +1029,17 @@ static void httpd_close_fn(httpd_handle_t hd, int sockfd) {
 void network_http_server_init(void) {
     ESP_LOGI(TAG, "init rest server");
 
-    ws_clients_init();
+    {
+        ws_clients_init();
+
+        websocket_stream = xStreamBufferCreateStatic(
+            WEBSOCKET_STREAM_BUFFER_SIZE_BYTES,
+            1,
+            websocket_stream_storage,
+            &websocket_stream_buffer_struct);
+
+        xTaskCreate(websocket_read_task, "client_ping_task", 4096, NULL, 5, NULL);
+    }
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.max_uri_handlers = COUNT_OF(uri_handlers);
@@ -912,6 +1058,4 @@ void network_http_server_init(void) {
     }
 
     ESP_LOGI(TAG, "init rest server done");
-
-    xTaskCreate(client_ping_task, "client_ping_task", 4096, NULL, 5, NULL);
 }
