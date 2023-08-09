@@ -187,3 +187,27 @@ void simple_uart_set_parity(uint8_t uart_num, uart_parity_t parity) {
 void simple_uart_set_data_bits(uint8_t uart_num, uart_word_length_t data_bits) {
     uart_hal_set_data_bit_num(UART_HAL(uart_num), data_bits);
 }
+
+uint32_t simple_uart_get_baud_rate(uint8_t uart_num) {
+    uint32_t baud_rate;
+    uart_hal_get_baudrate(UART_HAL(uart_num), &baud_rate);
+    return baud_rate;
+}
+
+uart_stop_bits_t simple_uart_get_stop_bits(uint8_t uart_num) {
+    uart_stop_bits_t stop_bits;
+    uart_hal_get_stop_bits(UART_HAL(uart_num), &stop_bits);
+    return stop_bits;
+}
+
+uart_parity_t simple_uart_get_parity(uint8_t uart_num) {
+    uart_parity_t parity;
+    uart_hal_get_parity(UART_HAL(uart_num), &parity);
+    return parity;
+}
+
+uart_word_length_t simple_uart_get_data_bits(uint8_t uart_num) {
+    uart_word_length_t data_bits;
+    uart_hal_get_data_bit_num(UART_HAL(uart_num), &data_bits);
+    return data_bits;
+}
