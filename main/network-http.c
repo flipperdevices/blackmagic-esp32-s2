@@ -662,7 +662,7 @@ err_fail:
 /*************** UART ***************/
 #include <stream_buffer.h>
 
-#define WEBSOCKET_STREAM_BUFFER_SIZE_BYTES 1024 * 256
+#define WEBSOCKET_STREAM_BUFFER_SIZE_BYTES 1024 * 1024
 static uint8_t websocket_stream_storage[WEBSOCKET_STREAM_BUFFER_SIZE_BYTES + 1] EXT_RAM_ATTR;
 static StaticStreamBuffer_t websocket_stream_buffer_struct;
 static StreamBufferHandle_t websocket_stream = NULL;

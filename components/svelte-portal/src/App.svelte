@@ -5,6 +5,7 @@
   import TabSys from "./tabs/TabSys.svelte";
   import TabPs from "./tabs/TabPS.svelte";
   import Reload from "./lib/Reload.svelte";
+  import Indicator from "./lib/Indicator.svelte";
 
   let current_tab = "WiFi";
   if (localStorage.getItem("current_tab") != null) {
@@ -16,10 +17,29 @@
     localStorage.setItem("current_tab", current_tab);
   }
 
+  let uart_history_array = [];
+  function uart_history_array_get() {
+    return uart_history_array;
+  }
+
+  function uart_history_array_put(data) {
+    uart_history_array.push(data);
+  }
+
+  let uart_indicatior = undefined;
   let uart_terminal = undefined;
   function receive_uart(data) {
+    uart_indicatior.activate();
+    uart_history_array_put(data);
     if (uart_terminal != undefined) {
       uart_terminal.push(data);
+    }
+  }
+
+  function uart_on_mount() {
+    let uart_data = uart_history_array_get();
+    for (let i = 0; i < uart_data.length; i++) {
+      uart_terminal.push(uart_data[i]);
     }
   }
 
@@ -55,12 +75,13 @@
       </tab-content>
     {:else if current_tab == tabs[3]}
       <tab-content>
-        <WebSocket receive={receive_uart} />
-        <UartTerminal bind:this={uart_terminal} />
+        <UartTerminal bind:this={uart_terminal} on_mount={uart_on_mount} />
       </tab-content>
     {/if}
   </tabs-content>
 
+  <Indicator bind:this={uart_indicatior} />
+  <WebSocket receive={receive_uart} />
   <Reload />
 </main>
 

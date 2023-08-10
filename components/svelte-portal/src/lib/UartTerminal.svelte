@@ -13,6 +13,8 @@
         last: "",
     };
 
+    export let on_mount = () => {};
+
     function process_bytes() {
         let decoded = new TextDecoder().decode(new Uint8Array(bytes));
         let last_line_complete =
@@ -35,7 +37,9 @@
         ready = ready;
     }
 
-    onMount(() => {});
+    onMount(() => {
+        on_mount();
+    });
 
     const scrollToBottom = (node) => {
         const scroll = () =>

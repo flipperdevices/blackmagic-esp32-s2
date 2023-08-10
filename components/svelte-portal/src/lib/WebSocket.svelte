@@ -4,8 +4,6 @@
 
     export let receive = () => {};
 
-    // const tag = "uart-terminal";
-
     function cleanup_server() {
         let url = api.server;
         if (url == "") {
@@ -19,12 +17,9 @@
     let gateway = `ws://${cleanup_server()}/api/v1/uart/websocket`;
     let websocket;
 
-    function on_open(event) {
-        console.log("Connection opened");
-    }
+    function on_open(event) {}
 
     function on_close(event) {
-        console.log("Connection closed");
         setTimeout(init, 1000);
     }
 
@@ -46,7 +41,6 @@
     }
 
     function init() {
-        console.log("Trying to open a WebSocket connection...");
         websocket = new WebSocket(gateway);
         websocket.onopen = on_open;
         websocket.onclose = on_close;
@@ -54,7 +48,7 @@
     }
 
     function destroy() {
-        websocket.onclose = function () {}; // disable onclose handler first
+        websocket.onclose = function () {};
         websocket.close();
     }
 
