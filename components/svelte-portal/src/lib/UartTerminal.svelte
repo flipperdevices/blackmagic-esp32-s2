@@ -1,6 +1,14 @@
 <script>
     import { onMount } from "svelte";
     import parseTerminal from "./terminal.js";
+    import Button from "./Button.svelte";
+    import Popup from "./Popup.svelte";
+    import Spinner from "./Spinner.svelte";
+    import SpinnerBig from "./SpinnerBig.svelte";
+    import { api } from "../lib/Api.svelte";
+    import Grid from "./Grid.svelte";
+    import Value from "./Value.svelte";
+    import Input from "./Input.svelte";
 
     let bytes = [];
     export function push(data) {
@@ -51,15 +59,107 @@
 
         return { update: scroll };
     };
+
+    let popup = {
+        text: "",
+        self: null,
+    };
+
+    let config = {
+        popup: null,
+        bit_rate: null,
+        stop_bits: null,
+        parity: null,
+        data_bits: null,
+    };
+
+    async function config_apply() {
+        popup.text = "";
+        popup.self.show();
+        popup = popup;
+        config.popup.close();
+
+        await api
+            .post("/api/v1/uart/set_config", {
+                bit_rate: parseInt(config.bit_rate.get_value()),
+                stop_bits: parseInt(config.stop_bits.get_value()),
+                parity: parseInt(config.parity.get_value()),
+                data_bits: parseInt(config.data_bits.get_value()),
+            })
+            .then((json) => {
+                if (json.error) {
+                    popup.text = json.error;
+                } else {
+                    popup.text = "Saved!";
+                }
+            });
+    }
 </script>
 
-<div class="terminal" use:scrollToBottom={ready}>
-    {#each ready.lines as line}
-        <div class="line">{@html line}</div>
-    {/each}
-    {#if ready.last}
-        <div class="line">{@html ready.last}<span class="cursor">_</span></div>
-    {/if}
+<div class="terminal-wrapper">
+    <div class="terminal selectable" use:scrollToBottom={ready}>
+        {#each ready.lines as line}
+            <div class="line">{@html line}</div>
+        {/each}
+        {#if ready.last}
+            <div class="line">
+                {@html ready.last}<span class="cursor">_</span>
+            </div>
+        {/if}
+    </div>
+    <div class="config">
+        <Button value="?" on:click={config.popup.show} />
+    </div>
+    <Popup bind:this={config.popup}>
+        {#await api.get("/api/v1/uart/get_config", {})}
+            <SpinnerBig />
+        {:then json}
+            <div>UART config</div>
+            <Grid>
+                <Value name="Rate">
+                    <Input
+                        type="number"
+                        value={json.bit_rate}
+                        bind:this={config.bit_rate}
+                    />
+                </Value>
+                <Value name="Stop">
+                    <Input
+                        type="number"
+                        value={json.stop_bits}
+                        bind:this={config.stop_bits}
+                    />
+                </Value>
+                <Value name="Prty">
+                    <Input
+                        type="number"
+                        value={json.parity}
+                        bind:this={config.parity}
+                    />
+                </Value>
+                <Value name="Data">
+                    <Input
+                        type="number"
+                        value={json.data_bits}
+                        bind:this={config.data_bits}
+                    />
+                </Value>
+            </Grid>
+            <div style="margin-top: 10px; text-align: center;">
+                <Button value="Save" on:click={config_apply} />
+            </div>
+        {:catch error}
+            <error>{error.message}</error>
+        {/await}
+    </Popup>
+
+    <Popup bind:this={popup.self}>
+        {#if popup.text != ""}
+            {popup.text}
+        {:else}
+            <Spinner />
+        {/if}
+    </Popup>
 </div>
 
 <style>
@@ -89,16 +189,20 @@
         display: block;
     }
 
+    .terminal-wrapper {
+        position: relative;
+    }
+
     .terminal {
         height: calc(100vh - 20px * 4.5 - 1em);
         overflow: scroll;
-        -moz-user-select: text;
-        -o-user-select: text;
-        -khtml-user-select: text;
-        -webkit-user-select: text;
-        -ms-user-select: text;
-        user-select: text;
         font-size: 18px;
+    }
+
+    .config {
+        position: absolute;
+        top: 0;
+        right: 0;
     }
 
     :global(.terminal.bold) {

@@ -1,11 +1,12 @@
 <script>
     export let name = "Name";
     export let splitter = false;
+    export let selectable = false;
 </script>
 
 {#if !splitter}
     <div class="value-name">{name}:</div>
-    <div class="value"><slot /></div>
+    <div class="value {selectable ? 'selectable' : ''}"><slot /></div>
 {:else}
     <div class="value-name splitter">{name}</div>
     <div class="value mobile-hidden">&nbsp;<slot /></div>

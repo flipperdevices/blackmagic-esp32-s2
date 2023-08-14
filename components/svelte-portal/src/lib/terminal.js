@@ -219,11 +219,10 @@ export default function parseTerminal(text) {
 
         } else {
             if (state.classes.length > 0 || state.styles.length > 0) {
-                state.output += `<span class="${state
-                    .classes
-                    .join(' ')}" style="${state
-                        .styles
-                        .join(';')}">`;
+                state.output += `<span 
+                    class="${state.classes.join(' ')}"
+                    style="${state.styles.join(';')}
+                ">`;
                 state.classes = [];
                 state.styles = [];
                 state.spanCount++;

@@ -997,7 +997,7 @@ const httpd_uri_t uri_handlers[] = {
      .is_websocket = false},
 
     {.uri = "/api/v1/uart/set_config",
-     .method = HTTP_GET,
+     .method = HTTP_POST,
      .handler = uart_set_config_handler,
      .user_ctx = NULL,
      .is_websocket = false},

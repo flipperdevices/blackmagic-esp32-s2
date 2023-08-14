@@ -47,7 +47,7 @@
         <Value name="Alloc"><Spinner /></Value>
         <Value name="Max block"><Spinner /></Value>
     {:then json}
-        <Value name="IP">{print_ip(json.ip)}</Value>
+        <Value name="IP" selectable="true">{print_ip(json.ip)}</Value>
         <Value name="Mac">{print_mac(json.mac)}</Value>
         <Value name="IDF ver">{json.idf_version}</Value>
         <Value name="Model">

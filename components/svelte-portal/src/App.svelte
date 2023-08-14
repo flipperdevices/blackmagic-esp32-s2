@@ -103,6 +103,15 @@
     user-select: none;
   }
 
+  :global(.selectable) {
+    -moz-user-select: text;
+    -o-user-select: text;
+    -khtml-user-select: text;
+    -webkit-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+  }
+
   :global(error) {
     padding: 5px 10px;
     background-color: rgb(255, 0, 0);

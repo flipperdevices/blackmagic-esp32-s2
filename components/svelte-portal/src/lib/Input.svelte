@@ -1,5 +1,6 @@
 <script>
   export let value = "";
+  export let type = "text";
 
   export function set_value(new_value) {
     value = new_value;
@@ -19,9 +20,9 @@
   autocorrect="off"
   autocapitalize="none"
   autocomplete="off"
-  type="text"
+  {type}
   {value}
-  size={value.length > 3 ? value.length : 3}
+  size={(value + "").length > 3 ? (value + "").length : 3}
   on:input={text_input}
 />
 
