@@ -2,31 +2,8 @@
     let server = "";
 
     if (development_mode) {
-        server = "http://172.30.1.206";
+        server = "http://172.30.1.83";
     }
-
-    // export const api_dev_mode = development_mode;
-
-    // export const api_server = server;
-
-    // export async function api_post(api, data) {
-    //     const res = await fetch(api_server + api, {
-    //         method: "POST",
-    //         body: JSON.stringify(data),
-    //     });
-
-    //     const json = await res.json();
-    //     return json;
-    // }
-
-    // export async function api_get(api) {
-    //     const res = await fetch(api_server + api, {
-    //         method: "GET",
-    //     });
-
-    //     const json = await res.json();
-    //     return json;
-    // }
 
     export const api = {
         server: server,

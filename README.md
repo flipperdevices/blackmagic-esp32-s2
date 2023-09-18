@@ -1,6 +1,6 @@
-# Black Magic Probe for ESP32-S2
+# Black Magic Probe / DapLink for ESP32-S2
 
-WiFi/USB capable version of the famous Black Magic Probe debugger.
+WiFi/USB capable version of the famous BlackMagicProbe (or DapLink) debugger.
 
 # Clone the Repository
 
@@ -32,22 +32,26 @@ Run:
 idf.py -p <port> flash
 ```
 
-## Test with ESP-IDF
-
-Connect to the dev board with:
-```shell
-idf.py -p <port> monitor
-```
-
-You should not see errors in the logs if the firmware is installed and running correctly. 
-
 ## Web interface development
 
 Web interface is located in `components/svelte-portal` and written in Svelte. To build it, you need to install Node.js and run `npm install` in `components/svelte-portal` directory. Then you can run `npm run dev` to start development server or `npm run build` to build production version.
 
-Typical workflow is to fix the board's IP address in `components/svelte-portal/src/App.svelte` and then run `npm run dev`. After that, you can open `http://localhost:5000` in your browser and see changes in the web interface in real time with live reload.
+Typical workflow is to fix the board's IP address in `components/svelte-portal/src/lib/Api.svelte` and then run `npm run dev`. After that, you can open `http://localhost:5000` in your browser and see changes in the web interface in real time with live reload.
+
+If you want to change local ip or port, you need to run `export HOST={ip} PORT={port}` before `npm run dev`. 
+
+```shell
+export HOST=127.0.0.1 PORT=3000
+npm run dev
+```
 
 When you're done, you need to run `npm run build`, `idf.py build` and then `idf.py -p <port> flash`. You can then open `http://blackmagic.local` in your browser and see the changes in the web interface.
+```shell
+npm run build
+idf.py build
+idf.py -p <port> flash
+```
+
 
 ## Schematic
 

@@ -108,7 +108,7 @@
         {/if}
     </div>
     <div class="config">
-        <Button value="?" on:click={config.popup.show} />
+        <Button value="#" on:click={config.popup.show} />
     </div>
     <Popup bind:this={config.popup}>
         {#await api.get("/api/v1/uart/get_config", {})}
