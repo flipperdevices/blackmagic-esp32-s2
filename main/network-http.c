@@ -173,16 +173,19 @@ static esp_err_t http_common_get_handler(httpd_req_t* req) {
     return ESP_OK;
 }
 
-static esp_err_t system_ping_handler(httpd_req_t* req) {
+static void httpd_resp_common(httpd_req_t* req) {
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_set_type(req, "application/json");
+}
+
+static esp_err_t system_ping_handler(httpd_req_t* req) {
+    httpd_resp_common(req);
     httpd_resp_sendstr(req, JSON_RESULT("OK"));
     return ESP_OK;
 }
 
 static esp_err_t system_tasks_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_type(req, "application/json");
+    httpd_resp_common(req);
 
     uint32_t task_count = uxTaskGetNumberOfTasks();
     TaskStatus_t* tasks = malloc(task_count * sizeof(TaskStatus_t));
@@ -237,14 +240,14 @@ static esp_err_t system_tasks_handler(httpd_req_t* req) {
 }
 
 static esp_err_t system_reboot(httpd_req_t* req) {
+    httpd_resp_common(req);
     httpd_resp_sendstr(req, JSON_RESULT("OK"));
     esp_restart();
     return ESP_OK;
 }
 
 static esp_err_t system_info_get_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_type(req, "application/json");
+    httpd_resp_common(req);
     cJSON* root = cJSON_CreateObject();
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
@@ -315,8 +318,7 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
 }
 
 static esp_err_t wifi_get_credentials_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_type(req, "application/json");
+    httpd_resp_common(req);
     cJSON* root = cJSON_CreateObject();
 
     mstring_t* ap_ssid = mstring_alloc();
@@ -375,7 +377,8 @@ static esp_err_t wifi_get_credentials_handler(httpd_req_t* req) {
 }
 
 static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_common(req);
+
     int total_length = req->content_len;
     int cur_len = 0;
     char* buffer = malloc(256);
@@ -388,7 +391,6 @@ static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
     mstring_t* hostname = mstring_alloc();
     const char* error_text = JSON_ERROR("unknown error");
     int received = 0;
-    httpd_resp_set_type(req, "application/json");
 
     if(total_length >= 256) {
         error_text = JSON_ERROR("request too long");
@@ -550,7 +552,8 @@ err_fail:
 }
 
 static esp_err_t wifi_list_get_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_common(req);
+
     uint16_t number = WIFI_SCAN_SIZE;
     wifi_ap_record_t* ap_info = calloc(WIFI_SCAN_SIZE, sizeof(wifi_ap_record_t));
     uint16_t ap_count = 0;
@@ -560,7 +563,6 @@ static esp_err_t wifi_list_get_handler(httpd_req_t* req) {
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&number, ap_info));
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
 
-    httpd_resp_set_type(req, "application/json");
     cJSON* root = cJSON_CreateObject();
     cJSON* array = cJSON_AddArrayToObject(root, "net_list");
 
@@ -589,7 +591,8 @@ static esp_err_t wifi_list_get_handler(httpd_req_t* req) {
 }
 
 static esp_err_t gpio_led_set_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_common(req);
+
     int total_length = req->content_len;
     int current_length = 0;
     char* buffer = malloc(256);
@@ -598,7 +601,6 @@ static esp_err_t gpio_led_set_handler(httpd_req_t* req) {
     int32_t led_red = -1;
     int32_t led_green = -1;
     int32_t led_blue = -1;
-    httpd_resp_set_type(req, "application/json");
 
     if(total_length >= 256) {
         error_text = JSON_ERROR("request too long");
@@ -662,7 +664,7 @@ err_fail:
 /*************** UART ***************/
 #include <stream_buffer.h>
 
-#define WEBSOCKET_STREAM_BUFFER_SIZE_BYTES 1024 * 1024
+#define WEBSOCKET_STREAM_BUFFER_SIZE_BYTES 512 * 1024
 static uint8_t websocket_stream_storage[WEBSOCKET_STREAM_BUFFER_SIZE_BYTES + 1] EXT_RAM_ATTR;
 static StaticStreamBuffer_t websocket_stream_buffer_struct;
 static StreamBufferHandle_t websocket_stream = NULL;
@@ -676,95 +678,15 @@ void network_http_uart_write_data(uint8_t* data, size_t size) {
     (void)written;
 }
 
-static void ws_async_send(void* arg) {
-    httpd_ws_frame_t ws_pkt;
-    async_resp_arg* resp_arg = arg;
-    httpd_handle_t hd = resp_arg->hd;
-
-    memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
-    ws_pkt.payload = (uint8_t*)"Hello!";
-    ws_pkt.len = strlen((char*)ws_pkt.payload);
-    ws_pkt.type = HTTPD_WS_TYPE_TEXT;
-
-    static size_t max_clients = CONFIG_LWIP_MAX_LISTENING_TCP;
-    size_t fds = max_clients;
-    int client_fds[max_clients];
-
-    esp_err_t ret = httpd_get_client_list(server, &fds, client_fds);
-
-    if(ret != ESP_OK) {
-        return;
-    }
-
-    for(int i = 0; i < fds; i++) {
-        int client_info = httpd_ws_get_fd_info(server, client_fds[i]);
-        if(client_info == HTTPD_WS_CLIENT_WEBSOCKET) {
-            httpd_ws_send_frame_async(hd, client_fds[i], &ws_pkt);
-        }
-    }
-    free(resp_arg);
-}
-
-static esp_err_t trigger_async_send(httpd_handle_t handle, httpd_req_t* req) {
-    async_resp_arg* resp_arg = malloc(sizeof(async_resp_arg));
-    resp_arg->hd = req->handle;
-    resp_arg->fd = httpd_req_to_sockfd(req);
-    return httpd_queue_work(handle, ws_async_send, resp_arg);
-}
-
-#define WS_CLIENTS_MAX 10
-#define WS_CLIENT_INVALID -1
-static int ws_clients[WS_CLIENTS_MAX] = {0};
-
-static void ws_clients_init() {
-    for(int i = 0; i < WS_CLIENTS_MAX; i++) {
-        ws_clients[i] = WS_CLIENT_INVALID;
-    }
-}
-
-static bool ws_client_add(int fd) {
-    for(int i = 0; i < WS_CLIENTS_MAX; i++) {
-        if(ws_clients[i] == WS_CLIENT_INVALID) {
-            ws_clients[i] = fd;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-static bool ws_client_remove(int fd) {
-    for(int i = 0; i < WS_CLIENTS_MAX; i++) {
-        if(ws_clients[i] == fd) {
-            ws_clients[i] = WS_CLIENT_INVALID;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-static size_t ws_client_count() {
-    size_t count = 0;
-    for(int i = 0; i < WS_CLIENTS_MAX; i++) {
-        if(ws_clients[i] != WS_CLIENT_INVALID) {
-            count++;
-        }
-    }
-
-    return count;
-}
-
 static void websocket_read_task(void* pvParameters) {
-#define WEBSOCKET_READ_BUFFER_SIZE 128
-    uint8_t* buffer = malloc(WEBSOCKET_READ_BUFFER_SIZE);
+    const size_t websocket_buffer_size = 1024;
+    uint8_t* buffer = malloc(websocket_buffer_size);
 
     while(true) {
-        size_t read = xStreamBufferReceive(
-            websocket_stream, buffer, WEBSOCKET_READ_BUFFER_SIZE, portMAX_DELAY);
-        if(ws_client_count() == 0 || read == 0) {
-            continue;
-        }
+        size_t read =
+            xStreamBufferReceive(websocket_stream, buffer, websocket_buffer_size, portMAX_DELAY);
+
+        if(read == 0) continue;
 
         httpd_ws_frame_t ws_pkt;
         memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
@@ -772,23 +694,28 @@ static void websocket_read_task(void* pvParameters) {
         ws_pkt.payload = buffer;
         ws_pkt.len = read;
 
-        for(int i = 0; i < WS_CLIENTS_MAX; i++) {
-            if(ws_clients[i] == WS_CLIENT_INVALID) {
-                continue;
-            }
-            int client_info = httpd_ws_get_fd_info(server, ws_clients[i]);
-            if(client_info == HTTPD_WS_CLIENT_WEBSOCKET) {
-                httpd_ws_send_frame_async(server, ws_clients[i], &ws_pkt);
-            }
+        static size_t max_clients = CONFIG_LWIP_MAX_LISTENING_TCP;
+        size_t fds = max_clients;
+        int client_fds[max_clients];
+
+        esp_err_t ret = httpd_get_client_list(server, &fds, client_fds);
+
+        if(ret != ESP_OK) {
+            return;
         }
 
-        // ESP_LOGI(TAG, "ping sent");
+        for(int i = 0; i < fds; i++) {
+            int client_info = httpd_ws_get_fd_info(server, client_fds[i]);
+            if(client_info == HTTPD_WS_CLIENT_WEBSOCKET) {
+                httpd_ws_send_frame_async(server, client_fds[i], &ws_pkt);
+            }
+        }
     }
 }
 
 static esp_err_t uart_get_config_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_type(req, "application/json");
+    httpd_resp_common(req);
+
     cJSON* root = cJSON_CreateObject();
 
     UsbUartConfig config = usb_uart_get_line_coding();
@@ -806,7 +733,8 @@ static esp_err_t uart_get_config_handler(httpd_req_t* req) {
 }
 
 static esp_err_t uart_set_config_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_common(req);
+
     int total_length = req->content_len;
     int current_length = 0;
     char* buffer = malloc(256);
@@ -817,8 +745,6 @@ static esp_err_t uart_set_config_handler(httpd_req_t* req) {
     uint8_t uart_parity = 0;
     uint8_t uart_data_bits = 0;
     bool error = false;
-
-    httpd_resp_set_type(req, "application/json");
 
     if(total_length >= 256) {
         error_text = JSON_ERROR("request too long");
@@ -893,7 +819,6 @@ err_fail:
 static esp_err_t uart_websocket_handler(httpd_req_t* req) {
     if(req->method == HTTP_GET) {
         ESP_LOGI(TAG, "Handshake done, the new connection was opened");
-        ws_client_add(httpd_req_to_sockfd(req));
         return ESP_OK;
     }
 
@@ -920,15 +845,14 @@ static esp_err_t uart_websocket_handler(httpd_req_t* req) {
             free(buf);
             return ret;
         }
-        ESP_LOGI(TAG, "Got packet with message: %s", ws_pkt.payload);
+
+        usb_uart_write(ws_pkt.payload, ws_pkt.len);
     }
 
-    ESP_LOGI(TAG, "frame len is %d", ws_pkt.len);
-
-    if(ws_pkt.type == HTTPD_WS_TYPE_TEXT && strcmp((char*)ws_pkt.payload, "toggle") == 0) {
+    if(buf) {
         free(buf);
-        return trigger_async_send(req->handle, req);
     }
+
     return ESP_OK;
 }
 
@@ -1017,35 +941,22 @@ const httpd_uri_t uri_handlers[] = {
      .is_websocket = false},
 };
 
-static esp_err_t httpd_open_fn(httpd_handle_t hd, int sockfd) {
-    return ESP_OK;
-}
-
-static void httpd_close_fn(httpd_handle_t hd, int sockfd) {
-    ws_client_remove(sockfd);
-    close(sockfd);
-}
-
 void network_http_server_init(void) {
-    ESP_LOGI(TAG, "init rest server");
+    ESP_LOGI(TAG, "init http server");
 
     {
-        ws_clients_init();
-
         websocket_stream = xStreamBufferCreateStatic(
             WEBSOCKET_STREAM_BUFFER_SIZE_BYTES,
             1,
             websocket_stream_storage,
             &websocket_stream_buffer_struct);
 
-        xTaskCreate(websocket_read_task, "client_ping_task", 4096, NULL, 5, NULL);
+        xTaskCreate(websocket_read_task, "websocket_read_task", 4096, NULL, 5, NULL);
     }
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.max_uri_handlers = COUNT_OF(uri_handlers);
     config.uri_match_fn = httpd_uri_match_wildcard;
-    config.open_fn = httpd_open_fn;
-    config.close_fn = httpd_close_fn;
 
     ESP_LOGI(TAG, "starting http server");
     if(httpd_start(&server, &config) != ESP_OK) {
