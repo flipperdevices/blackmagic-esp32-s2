@@ -23,6 +23,8 @@
 
     export let on_mount = () => {};
 
+    export let send;
+
     function process_bytes() {
         let decoded = new TextDecoder().decode(new Uint8Array(bytes));
         let last_line_complete =
@@ -94,6 +96,19 @@
                 }
             });
     }
+
+    let tx = {
+        popup: null,
+        data: "",
+        eol: "\\r\\n",
+    };
+
+    async function uart_send() {
+        tx.popup.close();
+        let eol = tx.eol.replaceAll("\\r", "\r").replaceAll("\\n", "\n");
+        let data = tx.data + eol;
+        send("s" + data);
+    }
 </script>
 
 <div class="terminal-wrapper">
@@ -108,6 +123,7 @@
         {/if}
     </div>
     <div class="config">
+        <Button value="S" on:click={tx.popup.show} />
         <Button value="#" on:click={config.popup.show} />
     </div>
     <Popup bind:this={config.popup}>
@@ -159,6 +175,21 @@
         {:else}
             <Spinner />
         {/if}
+    </Popup>
+
+    <Popup bind:this={tx.popup}>
+        <Grid>
+            <Value name="Data">
+                <Input value={tx.data} input={(data) => (tx.data = data)} /><br
+                />
+            </Value>
+            <Value name="EOL">
+                <Input value={tx.eol} input={(data) => (tx.eol = data)} />
+            </Value>
+        </Grid>
+        <div style="margin-top: 10px; text-align: center;">
+            <Button value="Send" on:click={uart_send} />
+        </div>
     </Popup>
 </div>
 

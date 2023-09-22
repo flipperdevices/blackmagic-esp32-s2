@@ -3,6 +3,7 @@
     import { onMount, onDestroy } from "svelte";
 
     export let receive = () => {};
+    export const send = send_data;
 
     function cleanup_server() {
         let url = api.server;
@@ -16,6 +17,10 @@
 
     let gateway = `ws://${cleanup_server()}/api/v1/uart/websocket`;
     let websocket;
+
+    function send_data(data) {
+        websocket.send(data);
+    }
 
     function on_open(event) {}
 

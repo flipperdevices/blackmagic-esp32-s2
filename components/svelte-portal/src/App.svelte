@@ -28,6 +28,8 @@
 
   let uart_indicatior = undefined;
   let uart_terminal = undefined;
+  let web_socket = undefined;
+
   function receive_uart(data) {
     uart_indicatior.activate();
     uart_history_array_put(data);
@@ -41,6 +43,10 @@
     for (let i = 0; i < uart_data.length; i++) {
       uart_terminal.push(uart_data[i]);
     }
+  }
+
+  function uart_send(data) {
+    web_socket.send(data);
   }
 
   const tabs = ["WiFi", "SYS", "PS", "UART"];
@@ -75,13 +81,13 @@
       </tab-content>
     {:else if current_tab == tabs[3]}
       <tab-content>
-        <UartTerminal bind:this={uart_terminal} on_mount={uart_on_mount} />
+        <UartTerminal bind:this={uart_terminal} on_mount={uart_on_mount} send={uart_send}/>
       </tab-content>
     {/if}
   </tabs-content>
 
   <Indicator bind:this={uart_indicatior} />
-  <WebSocket receive={receive_uart} />
+  <WebSocket bind:this={web_socket} receive={receive_uart} />
   <Reload />
 </main>
 
