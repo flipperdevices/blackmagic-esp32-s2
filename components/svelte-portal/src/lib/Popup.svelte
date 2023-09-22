@@ -14,7 +14,7 @@
   <popup-wrapper>
     <popup-body>
       <popup-content>
-        <popup-close on:click={close}>X</popup-close>
+        <popup-close on:click={close} on:keypress={close}>X</popup-close>
         <popup-border>
           <slot />
         </popup-border>

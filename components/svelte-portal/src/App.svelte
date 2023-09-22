@@ -60,6 +60,9 @@
         on:click={() => {
           change_tab(tab);
         }}
+        on:keypress={() => {
+          change_tab(tab);
+        }}
       >
         {tab}
       </tab>
@@ -81,7 +84,11 @@
       </tab-content>
     {:else if current_tab == tabs[3]}
       <tab-content>
-        <UartTerminal bind:this={uart_terminal} on_mount={uart_on_mount} send={uart_send}/>
+        <UartTerminal
+          bind:this={uart_terminal}
+          on_mount={uart_on_mount}
+          send={uart_send}
+        />
       </tab-content>
     {/if}
   </tabs-content>

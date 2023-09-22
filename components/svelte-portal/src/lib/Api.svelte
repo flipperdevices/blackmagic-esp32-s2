@@ -2,7 +2,7 @@
     let server = "";
 
     if (development_mode) {
-        server = "http://172.30.1.83";
+        server = "http://192.168.0.18";
     }
 
     export const api = {
