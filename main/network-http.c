@@ -253,6 +253,12 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
     esp_chip_info(&chip_info);
 
     cJSON_AddStringToObject(root, "idf_version", IDF_VER);
+    cJSON_AddStringToObject(root, "firmware_commit", FW_GIT_COMMIT);
+    cJSON_AddStringToObject(root, "firmware_branch", FW_GIT_BRANCH);
+    cJSON_AddStringToObject(root, "firmware_branch_num", FW_GIT_BRANCH_NUM);
+    cJSON_AddStringToObject(root, "firmware_version", FW_GIT_VERSION);
+    cJSON_AddStringToObject(root, "firmware_build_date", FW_BUILD_DATE);
+
     switch(chip_info.model) {
     case CHIP_ESP32:
         cJSON_AddStringToObject(root, "model", "ESP32");

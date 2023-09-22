@@ -28,6 +28,13 @@
     }
 </script>
 
+<!-- 
+"firmware_commit":	"03b806d",
+"firmware_branch":	"zlo/2630-logs-over-wifi",
+"firmware_branch_num":	"157",
+"firmware_version":	"0.1.1",
+"firmware_build_date":	"22-09-2023", 
+-->
 <Grid>
     {#await api.get("/api/v1/system/info")}
         <Value name="IP"><Spinner /></Value>
@@ -50,6 +57,12 @@
         <Value name="IP" selectable="true">{print_ip(json.ip)}</Value>
         <Value name="Mac">{print_mac(json.mac)}</Value>
         <Value name="IDF ver">{json.idf_version}</Value>
+        <Value name="FW commit">
+            {json.firmware_branch}#{json.firmware_commit}
+        </Value>
+        <Value name="FW ver">
+            {json.firmware_version}/{json.firmware_branch_num}/{json.firmware_build_date}
+        </Value>
         <Value name="Model">
             {json.model}.{json.revision}
             {json.cores}-core
