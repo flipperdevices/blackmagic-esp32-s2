@@ -46,7 +46,7 @@ void network_gdb_send(uint8_t* buffer, size_t size) {
     }
 };
 
-void receive_and_send_to_gdb(void) {
+static void receive_and_send_to_gdb(void) {
     size_t rx_size = SIZE_MAX;
     size_t gdb_packet_size = gdb_glue_get_packet_size();
     uint8_t* buffer_rx = malloc(gdb_packet_size);

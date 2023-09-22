@@ -11,6 +11,7 @@ set(SOURCES
     "network.c"
     "network-http.c"
     "network-gdb.c"
+    "network-uart.c"
     "cli-uart.c"
     "cli/cli.c"
     "cli/cli-commands.c"
