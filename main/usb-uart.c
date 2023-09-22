@@ -5,15 +5,18 @@
 #include <esp_log.h>
 #include "usb.h"
 #include "usb-uart.h"
+#include "network-uart.h"
 
 #define USB_UART_PORT_NUM UART_NUM_0
 #define USB_UART_TXD_PIN (43)
 #define USB_UART_RXD_PIN (44)
 #define USB_UART_BAUD_RATE (230400)
-#define USB_UART_BUF_SIZE (128)
 #define USB_UART_RX_BUF_SIZE (64)
 
-static StreamBufferHandle_t uart_rx_stream;
+#define UART_RX_STREAM_BUFFER_SIZE_BYTES 1024 * 1024
+static uint8_t uart_rx_stream_storage[UART_RX_STREAM_BUFFER_SIZE_BYTES + 1] EXT_RAM_ATTR;
+static StaticStreamBuffer_t uart_rx_stream_buffer_struct;
+static StreamBufferHandle_t uart_rx_stream = NULL;
 
 static void usb_uart_rx_isr(void* context);
 static void usb_uart_rx_task(void* pvParameters);
@@ -23,7 +26,8 @@ static const char* TAG = "usb-uart";
 void usb_uart_init() {
     ESP_LOGI(TAG, "init");
 
-    uart_rx_stream = xStreamBufferCreate(USB_UART_BUF_SIZE * 4, 1);
+    uart_rx_stream = xStreamBufferCreateStatic(
+        UART_RX_STREAM_BUFFER_SIZE_BYTES, 1, uart_rx_stream_storage, &uart_rx_stream_buffer_struct);
 
     xTaskCreate(usb_uart_rx_task, "usb_uart_rx", 4096, NULL, 5, NULL);
 
@@ -139,7 +143,6 @@ UsbUartConfig usb_uart_get_line_coding() {
         config.parity = 0;
         break;
     case UART_PARITY_ODD:
-
         config.parity = 1;
         break;
     case UART_PARITY_EVEN:
@@ -186,6 +189,9 @@ static void usb_uart_rx_task(void* pvParameters) {
                 }
             }
             network_http_uart_write_data(data, length);
+            if(network_uart_connected()) {
+                network_uart_send(data, length);
+            }
         }
     }
 }
