@@ -14,7 +14,7 @@ struct SoftUart {
 #define wait_cycles(cycles) \
     for(uint32_t start = cycle_count_get(); cycle_count_get() - start < cycles;)
 
-static uint32_t cycle_count_get() {
+static inline uint32_t __attribute__((always_inline)) cycle_count_get() {
     uint32_t ccount;
     __asm__ __volatile__("esync; rsr %0,ccount" : "=a"(ccount));
     return ccount;
