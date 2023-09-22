@@ -241,6 +241,11 @@ export default function parseTerminal(text) {
         .output
         .replace(/&nbsp;([^&]+)&nbsp;/g, ' $1 ');
 
+    // return first space to &nbsp;
+    if (state.output.startsWith(' ')) {
+        state.output = '&nbsp;' + state.output.substring(1);
+    }
+
 
     for (let i = 0; i < state.spanCount; i++) {
         state.output += '</span>';
