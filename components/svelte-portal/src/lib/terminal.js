@@ -227,9 +227,20 @@ export default function parseTerminal(text) {
                 state.styles = [];
                 state.spanCount++;
             }
-            state.output += character;
+
+            if (character === ' ') {
+                state.output += '&nbsp;';
+            } else {
+                state.output += character;
+            }
         }
     }
+
+    // replace single &nbsp; enclosed with non &nbsp; characters with spaces
+    state.output = state
+        .output
+        .replace(/&nbsp;([^&]+)&nbsp;/g, ' $1 ');
+
 
     for (let i = 0; i < state.spanCount; i++) {
         state.output += '</span>';

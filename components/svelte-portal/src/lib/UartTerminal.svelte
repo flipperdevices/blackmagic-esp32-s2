@@ -9,43 +9,68 @@
     import Grid from "./Grid.svelte";
     import Value from "./Value.svelte";
     import Input from "./Input.svelte";
+    import StringView from "StringView";
+    import Select from "./Select.svelte";
 
-    let bytes = [];
-    export function push(data) {
-        bytes.push(...data);
-        process_bytes();
+    let bytes = new Uint8Array(0);
+
+    function cat_arrays(a, b) {
+        var c = new a.constructor(a.length + b.length);
+        c.set(a, 0);
+        c.set(b, a.length);
+        return c;
     }
+
+    export const push = (data) => {
+        bytes = cat_arrays(bytes, data);
+        process_bytes();
+    };
+
+    export let on_mount = () => {};
+    export let send = () => {};
 
     let ready = {
         lines: [],
         last: "",
     };
 
-    export let on_mount = () => {};
+    const process_bytes = () => {
+        // convert to DataView
+        const data_view = new DataView(
+            bytes.buffer,
+            bytes.byteOffset,
+            bytes.byteLength
+        );
 
-    export let send;
+        // find last EOL
+        const last_eol = bytes.lastIndexOf("\n".charCodeAt(0));
 
-    function process_bytes() {
-        let decoded = new TextDecoder().decode(new Uint8Array(bytes));
-        let last_line_complete =
-            decoded.lastIndexOf("\n") == decoded.length - 1;
+        // decode bytes from 0 to last_eol
+        const decoded = StringView.getString(data_view, 0, last_eol, "ASCII");
 
+        // split by EOL
         let lines = decoded.split("\n");
 
-        bytes = [];
-        if (!last_line_complete) {
-            ready.last = lines.pop();
-            bytes.push(...new TextEncoder().encode(ready.last));
+        // parse and push lines
+        lines = lines.map((line) => parseTerminal(line));
+        ready.lines.push(...lines);
+
+        // remove processed bytes
+        bytes = bytes.subarray(last_eol + 1);
+
+        // decode last line
+        if (bytes.length > 0) {
+            const last_string = StringView.getString(
+                data_view,
+                0,
+                bytes.length,
+                "ASCII"
+            );
+            ready.last = parseTerminal(last_string);
         } else {
             ready.last = "";
         }
-
-        lines = lines.map((line) => parseTerminal(line));
-        ready.last = parseTerminal(ready.last);
-
-        ready.lines.push(...lines);
-        ready = ready;
-    }
+    };
 
     onMount(() => {
         on_mount();
@@ -107,7 +132,17 @@
         tx.popup.close();
         let eol = tx.eol.replaceAll("\\r", "\r").replaceAll("\\n", "\n");
         let data = tx.data + eol;
-        send("s" + data);
+
+        // split data to chunks of 1k bytes
+        let chunks = [];
+        while (data.length > 0) {
+            chunks.push(data.slice(0, 1024));
+            data = data.slice(1024);
+        }
+
+        for (let chunk of chunks) {
+            send(chunk);
+        }
     }
 </script>
 
@@ -140,24 +175,37 @@
                     />
                 </Value>
                 <Value name="Stop">
-                    <Input
-                        type="number"
-                        value={json.stop_bits}
+                    <Select
                         bind:this={config.stop_bits}
+                        items={[
+                            { text: "1", value: "0" },
+                            { text: "1.5", value: "1" },
+                            { text: "2", value: "2" },
+                        ]}
+                        value={json.stop_bits.toString()}
                     />
                 </Value>
                 <Value name="Prty">
-                    <Input
-                        type="number"
-                        value={json.parity}
+                    <Select
                         bind:this={config.parity}
+                        items={[
+                            { text: "None", value: "0" },
+                            { text: "Odd", value: "1" },
+                            { text: "Even", value: "2" },
+                        ]}
+                        value={json.parity.toString()}
                     />
                 </Value>
                 <Value name="Data">
-                    <Input
-                        type="number"
-                        value={json.data_bits}
+                    <Select
                         bind:this={config.data_bits}
+                        items={[
+                            { text: "5", value: "5" },
+                            { text: "6", value: "6" },
+                            { text: "7", value: "7" },
+                            { text: "8", value: "8" },
+                        ]}
+                        value={json.data_bits.toString()}
                     />
                 </Value>
             </Grid>
@@ -226,8 +274,10 @@
 
     .terminal {
         height: calc(100vh - 20px * 4.5 - 1em);
-        overflow: scroll;
         font-size: 18px;
+        overflow-y: scroll;
+        overflow-x: clip;
+        white-space: wrap;
     }
 
     .config {
@@ -247,5 +297,9 @@
     }
     :global(.terminal.invisible) {
         display: none;
+    }
+
+    :global(.terminal-wrapper select) {
+        width: 100%;
     }
 </style>
