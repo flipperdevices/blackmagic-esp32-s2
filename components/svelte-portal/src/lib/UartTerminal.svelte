@@ -9,7 +9,7 @@
     import Grid from "./Grid.svelte";
     import Value from "./Value.svelte";
     import Input from "./Input.svelte";
-    import StringView from "StringView";
+    import StringView from "stringview/StringView";
     import Select from "./Select.svelte";
 
     let bytes = new Uint8Array(0);
