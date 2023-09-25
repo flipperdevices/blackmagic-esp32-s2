@@ -6,6 +6,7 @@
   import TabPs from "./tabs/TabPS.svelte";
   import Reload from "./lib/Reload.svelte";
   import Indicator from "./lib/Indicator.svelte";
+  import { onMount } from "svelte";
 
   let current_tab = "WiFi";
   if (localStorage.getItem("current_tab") != null) {
@@ -50,6 +51,20 @@
   }
 
   const tabs = ["WiFi", "SYS", "PS", "UART"];
+
+  // ugly hack for terminal height on mobile devices
+  const appHeight = () => {
+    const doc = document.documentElement;
+    doc.style.setProperty("--app-height", `${window.innerHeight}px`);
+  };
+
+  onMount(() => {
+    appHeight();
+    window.addEventListener("resize", appHeight);
+    window.addEventListener("orientationchange", function () {
+      appHeight();
+    });
+  });
 </script>
 
 <main>
@@ -69,7 +84,7 @@
     {/each}
   </tabs>
 
-  <tabs-content>
+  <tabs-content class:uart-terminal={current_tab == tabs[3]}>
     {#if current_tab == tabs[0]}
       <tab-content>
         <TabWiFi />
@@ -83,7 +98,7 @@
         <TabPs />
       </tab-content>
     {:else if current_tab == tabs[3]}
-      <tab-content>
+      <tab-content class="uart-terminal">
         <UartTerminal
           bind:this={uart_terminal}
           on_mount={uart_on_mount}
@@ -156,9 +171,20 @@
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   }
 
+  tabs-content.uart-terminal {
+    height: calc(var(--app-height) - 105px);
+  }
+
   @media (max-width: 520px) {
     :global(.mobile-hidden) {
       display: none !important;
+    }
+    main {
+      margin: 0;
+    }
+
+    tabs-content.uart-terminal {
+      height: calc(var(--app-height) - 85px);
     }
   }
 
@@ -175,6 +201,10 @@
     display: inline-block;
   }
 
+  tab:last-child {
+    margin-right: 0;
+  }
+
   tab:hover,
   tab.selected:hover {
     background: rgb(255, 255, 255);
@@ -189,5 +219,13 @@
   tabs-content {
     display: block;
     margin-top: 10px;
+  }
+
+  tab-content {
+    display: block;
+  }
+
+  tab-content.uart-terminal {
+    height: 100%;
   }
 </style>

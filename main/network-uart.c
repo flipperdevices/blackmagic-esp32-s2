@@ -48,7 +48,7 @@ void network_uart_send(uint8_t* buffer, size_t size) {
 
 static void receive_and_send_to_uart(void) {
     size_t rx_size = SIZE_MAX;
-    const size_t data_size = 512;
+    const size_t data_size = 1024;
     uint8_t* buffer_rx = malloc(data_size);
 
     do {

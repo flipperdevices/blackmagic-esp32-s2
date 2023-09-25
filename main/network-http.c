@@ -685,8 +685,12 @@ void network_http_uart_write_data(uint8_t* data, size_t size) {
 }
 
 static void websocket_read_task(void* pvParameters) {
-    const size_t websocket_buffer_size = 1024;
+    const size_t websocket_buffer_size = 4096;
     uint8_t* buffer = malloc(websocket_buffer_size);
+
+    httpd_ws_frame_t ws_pkt;
+    memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+    ws_pkt.type = HTTPD_WS_TYPE_BINARY;
 
     while(true) {
         size_t read =
@@ -694,9 +698,6 @@ static void websocket_read_task(void* pvParameters) {
 
         if(read == 0) continue;
 
-        httpd_ws_frame_t ws_pkt;
-        memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
-        ws_pkt.type = HTTPD_WS_TYPE_BINARY;
         ws_pkt.payload = buffer;
         ws_pkt.len = read;
 

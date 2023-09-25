@@ -34,6 +34,14 @@
         last: "",
     };
 
+    const line_empty_to_br = (line) => {
+        if (line.trim() == "") {
+            return "<br>";
+        } else {
+            return line;
+        }
+    };
+
     const process_bytes = () => {
         // convert to DataView
         const data_view = new DataView(
@@ -42,21 +50,32 @@
             bytes.byteLength
         );
 
+        const encoding = "ASCII";
+        const eol = "\n";
+        const eol_code = eol.charCodeAt(0);
+
         // find last EOL
-        const last_eol = bytes.lastIndexOf("\n".charCodeAt(0));
+        const last_eol = bytes.lastIndexOf(eol_code);
 
-        // decode bytes from 0 to last_eol
-        const decoded = StringView.getString(data_view, 0, last_eol, "ASCII");
+        if (last_eol != -1) {
+            // decode bytes from 0 to last_eol
+            const decoded = StringView.getString(
+                data_view,
+                0,
+                last_eol,
+                encoding
+            );
 
-        // split by EOL
-        let lines = decoded.split("\n");
+            // split by EOL
+            let lines = decoded.split(eol);
 
-        // parse and push lines
-        lines = lines.map((line) => parseTerminal(line));
-        ready.lines.push(...lines);
+            // parse and push lines
+            lines = lines.map((line) => parseTerminal(line));
+            ready.lines.push(...lines);
 
-        // remove processed bytes
-        bytes = bytes.subarray(last_eol + 1);
+            // remove processed bytes
+            bytes = bytes.subarray(last_eol + 1);
+        }
 
         // decode last line
         if (bytes.length > 0) {
@@ -64,7 +83,7 @@
                 data_view,
                 0,
                 bytes.length,
-                "ASCII"
+                encoding
             );
             ready.last = parseTerminal(last_string);
         } else {
@@ -148,9 +167,11 @@
 
 <div class="terminal-wrapper">
     <div class="terminal selectable" use:scrollToBottom={ready}>
-        {#each ready.lines as line}
-            <div class="line">{@html line}</div>
-        {/each}
+        <div class="line">
+            {#each ready.lines as line}
+                {@html line}<br />
+            {/each}
+        </div>
         {#if ready.last}
             <div class="line">
                 {@html ready.last}<span class="cursor">_</span>
@@ -270,10 +291,11 @@
 
     .terminal-wrapper {
         position: relative;
+        height: 100%;
     }
 
     .terminal {
-        height: calc(100vh - 20px * 4.5 - 1em);
+        height: 100%;
         font-size: 18px;
         overflow-y: scroll;
         overflow-x: clip;
@@ -289,12 +311,15 @@
     :global(.terminal.bold) {
         font-weight: bold;
     }
+
     :global(.terminal.underline) {
         text-decoration: underline;
     }
+
     :global(.terminal.blink) {
         animation: blink 1s infinite;
     }
+
     :global(.terminal.invisible) {
         display: none;
     }
