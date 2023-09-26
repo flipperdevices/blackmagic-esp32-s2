@@ -10,12 +10,19 @@
 #include "nvs-config.h"
 #include "led.h"
 #include "helpers.h"
+#include "usb-uart.h"
 
 #define TAG "network-http"
 #define JSON_ERROR(error_text) "{\"error\": \"" error_text "\"}"
 #define JSON_RESULT(result_text) "{\"result\": \"" result_text "\"}"
 
 #define WIFI_SCAN_SIZE 20
+
+static httpd_handle_t server = NULL;
+typedef struct {
+    httpd_handle_t hd;
+    int fd;
+} async_resp_arg;
 
 static const char* get_auth_mode(int authmode) {
     switch(authmode) {
@@ -166,16 +173,19 @@ static esp_err_t http_common_get_handler(httpd_req_t* req) {
     return ESP_OK;
 }
 
-static esp_err_t system_ping_handler(httpd_req_t* req) {
+static void httpd_resp_common(httpd_req_t* req) {
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_set_type(req, "application/json");
+}
+
+static esp_err_t system_ping_handler(httpd_req_t* req) {
+    httpd_resp_common(req);
     httpd_resp_sendstr(req, JSON_RESULT("OK"));
     return ESP_OK;
 }
 
 static esp_err_t system_tasks_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_type(req, "application/json");
+    httpd_resp_common(req);
 
     uint32_t task_count = uxTaskGetNumberOfTasks();
     TaskStatus_t* tasks = malloc(task_count * sizeof(TaskStatus_t));
@@ -230,19 +240,25 @@ static esp_err_t system_tasks_handler(httpd_req_t* req) {
 }
 
 static esp_err_t system_reboot(httpd_req_t* req) {
+    httpd_resp_common(req);
     httpd_resp_sendstr(req, JSON_RESULT("OK"));
     esp_restart();
     return ESP_OK;
 }
 
 static esp_err_t system_info_get_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_type(req, "application/json");
+    httpd_resp_common(req);
     cJSON* root = cJSON_CreateObject();
     esp_chip_info_t chip_info;
     esp_chip_info(&chip_info);
 
     cJSON_AddStringToObject(root, "idf_version", IDF_VER);
+    cJSON_AddStringToObject(root, "firmware_commit", FW_GIT_COMMIT);
+    cJSON_AddStringToObject(root, "firmware_branch", FW_GIT_BRANCH);
+    cJSON_AddStringToObject(root, "firmware_branch_num", FW_GIT_BRANCH_NUM);
+    cJSON_AddStringToObject(root, "firmware_version", FW_GIT_VERSION);
+    cJSON_AddStringToObject(root, "firmware_build_date", FW_BUILD_DATE);
+
     switch(chip_info.model) {
     case CHIP_ESP32:
         cJSON_AddStringToObject(root, "model", "ESP32");
@@ -266,13 +282,24 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
     cJSON_AddNumberToObject(root, "revision", chip_info.revision);
     cJSON_AddNumberToObject(root, "cores", chip_info.cores);
 
+    // main heap
     multi_heap_info_t info;
-    heap_caps_get_info(&info, MALLOC_CAP_DEFAULT);
+    heap_caps_get_info(&info, MALLOC_CAP_INTERNAL);
+
     cJSON* heap = cJSON_AddObjectToObject(root, "heap");
     cJSON_AddNumberToObject(heap, "total_free_bytes", info.total_free_bytes);
     cJSON_AddNumberToObject(heap, "total_allocated_bytes", info.total_allocated_bytes);
     cJSON_AddNumberToObject(heap, "largest_free_block", info.largest_free_block);
     cJSON_AddNumberToObject(heap, "minimum_free_bytes", info.minimum_free_bytes);
+
+    // psram heap
+    heap_caps_get_info(&info, MALLOC_CAP_SPIRAM);
+
+    cJSON* psram_heap = cJSON_AddObjectToObject(root, "psram_heap");
+    cJSON_AddNumberToObject(psram_heap, "total_free_bytes", info.total_free_bytes);
+    cJSON_AddNumberToObject(psram_heap, "total_allocated_bytes", info.total_allocated_bytes);
+    cJSON_AddNumberToObject(psram_heap, "largest_free_block", info.largest_free_block);
+    cJSON_AddNumberToObject(psram_heap, "minimum_free_bytes", info.minimum_free_bytes);
 
     // ip addr
     cJSON_AddNumberToObject(root, "ip", network_get_ip());
@@ -297,8 +324,7 @@ static esp_err_t system_info_get_handler(httpd_req_t* req) {
 }
 
 static esp_err_t wifi_get_credentials_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_type(req, "application/json");
+    httpd_resp_common(req);
     cJSON* root = cJSON_CreateObject();
 
     mstring_t* ap_ssid = mstring_alloc();
@@ -357,7 +383,8 @@ static esp_err_t wifi_get_credentials_handler(httpd_req_t* req) {
 }
 
 static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_common(req);
+
     int total_length = req->content_len;
     int cur_len = 0;
     char* buffer = malloc(256);
@@ -370,7 +397,6 @@ static esp_err_t wifi_set_credentials_handler(httpd_req_t* req) {
     mstring_t* hostname = mstring_alloc();
     const char* error_text = JSON_ERROR("unknown error");
     int received = 0;
-    httpd_resp_set_type(req, "application/json");
 
     if(total_length >= 256) {
         error_text = JSON_ERROR("request too long");
@@ -532,7 +558,8 @@ err_fail:
 }
 
 static esp_err_t wifi_list_get_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_common(req);
+
     uint16_t number = WIFI_SCAN_SIZE;
     wifi_ap_record_t* ap_info = calloc(WIFI_SCAN_SIZE, sizeof(wifi_ap_record_t));
     uint16_t ap_count = 0;
@@ -542,7 +569,6 @@ static esp_err_t wifi_list_get_handler(httpd_req_t* req) {
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&number, ap_info));
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
 
-    httpd_resp_set_type(req, "application/json");
     cJSON* root = cJSON_CreateObject();
     cJSON* array = cJSON_AddArrayToObject(root, "net_list");
 
@@ -571,7 +597,8 @@ static esp_err_t wifi_list_get_handler(httpd_req_t* req) {
 }
 
 static esp_err_t gpio_led_set_handler(httpd_req_t* req) {
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_common(req);
+
     int total_length = req->content_len;
     int current_length = 0;
     char* buffer = malloc(256);
@@ -580,7 +607,6 @@ static esp_err_t gpio_led_set_handler(httpd_req_t* req) {
     int32_t led_red = -1;
     int32_t led_green = -1;
     int32_t led_blue = -1;
-    httpd_resp_set_type(req, "application/json");
 
     if(total_length >= 256) {
         error_text = JSON_ERROR("request too long");
@@ -641,6 +667,202 @@ err_fail:
     return ESP_FAIL;
 }
 
+/*************** UART ***************/
+#include <stream_buffer.h>
+
+#define WEBSOCKET_STREAM_BUFFER_SIZE_BYTES 512 * 1024
+static uint8_t websocket_stream_storage[WEBSOCKET_STREAM_BUFFER_SIZE_BYTES + 1] EXT_RAM_ATTR;
+static StaticStreamBuffer_t websocket_stream_buffer_struct;
+static StreamBufferHandle_t websocket_stream = NULL;
+
+void network_http_uart_write_data(uint8_t* data, size_t size) {
+    if(websocket_stream == NULL) {
+        return;
+    }
+
+    size_t written = xStreamBufferSend(websocket_stream, data, size, 0);
+    (void)written;
+}
+
+static void websocket_read_task(void* pvParameters) {
+    const size_t websocket_buffer_size = 4096;
+    uint8_t* buffer = malloc(websocket_buffer_size);
+
+    httpd_ws_frame_t ws_pkt;
+    memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+    ws_pkt.type = HTTPD_WS_TYPE_BINARY;
+
+    while(true) {
+        size_t read =
+            xStreamBufferReceive(websocket_stream, buffer, websocket_buffer_size, portMAX_DELAY);
+
+        if(read == 0) continue;
+
+        ws_pkt.payload = buffer;
+        ws_pkt.len = read;
+
+        static size_t max_clients = CONFIG_LWIP_MAX_LISTENING_TCP;
+        size_t fds = max_clients;
+        int client_fds[max_clients];
+
+        esp_err_t ret = httpd_get_client_list(server, &fds, client_fds);
+
+        if(ret != ESP_OK) {
+            return;
+        }
+
+        for(int i = 0; i < fds; i++) {
+            int client_info = httpd_ws_get_fd_info(server, client_fds[i]);
+            if(client_info == HTTPD_WS_CLIENT_WEBSOCKET) {
+                httpd_ws_send_frame_async(server, client_fds[i], &ws_pkt);
+            }
+        }
+    }
+}
+
+static esp_err_t uart_get_config_handler(httpd_req_t* req) {
+    httpd_resp_common(req);
+
+    cJSON* root = cJSON_CreateObject();
+
+    UsbUartConfig config = usb_uart_get_line_coding();
+
+    cJSON_AddNumberToObject(root, "bit_rate", config.bit_rate);
+    cJSON_AddNumberToObject(root, "stop_bits", config.stop_bits);
+    cJSON_AddNumberToObject(root, "parity", config.parity);
+    cJSON_AddNumberToObject(root, "data_bits", config.data_bits);
+
+    const char* json_text = cJSON_Print(root);
+    httpd_resp_sendstr(req, json_text);
+    free((void*)json_text);
+    cJSON_Delete(root);
+    return ESP_OK;
+}
+
+static esp_err_t uart_set_config_handler(httpd_req_t* req) {
+    httpd_resp_common(req);
+
+    int total_length = req->content_len;
+    int current_length = 0;
+    char* buffer = malloc(256);
+    const char* error_text = JSON_ERROR("unknown error");
+    int received = 0;
+    uint32_t uart_bit_rate = 0;
+    uint8_t uart_stop_bits = 0;
+    uint8_t uart_parity = 0;
+    uint8_t uart_data_bits = 0;
+    bool error = false;
+
+    if(total_length >= 256) {
+        error_text = JSON_ERROR("request too long");
+        goto err_fail;
+    }
+
+    while(current_length < total_length) {
+        received = httpd_req_recv(req, buffer + current_length, total_length);
+        if(received <= 0) {
+            error_text = JSON_ERROR("cannot receive request data");
+            goto err_fail;
+        }
+        current_length += received;
+    }
+    buffer[total_length] = '\0';
+
+    cJSON* root = cJSON_Parse(buffer);
+    cJSON* element;
+    element = cJSON_GetObjectItem(root, "bit_rate");
+    if(element != NULL && element->type == cJSON_Number) {
+        uart_bit_rate = element->valuedouble;
+    } else {
+        error = true;
+    }
+
+    element = cJSON_GetObjectItem(root, "stop_bits");
+    if(element != NULL && element->type == cJSON_Number) {
+        uart_stop_bits = element->valuedouble;
+    } else {
+        error = true;
+    }
+
+    element = cJSON_GetObjectItem(root, "parity");
+    if(element != NULL && element->type == cJSON_Number) {
+        uart_parity = element->valuedouble;
+    } else {
+        error = true;
+    }
+
+    element = cJSON_GetObjectItem(root, "data_bits");
+    if(element != NULL && element->type == cJSON_Number) {
+        uart_data_bits = element->valuedouble;
+    } else {
+        error = true;
+    }
+    cJSON_Delete(root);
+
+    if(error) {
+        error_text = JSON_ERROR("expected [bit_rate], [stop_bits], [parity], [data_bits]");
+        goto err_fail;
+    }
+
+    UsbUartConfig config = {
+        .bit_rate = uart_bit_rate,
+        .stop_bits = uart_stop_bits,
+        .parity = uart_parity,
+        .data_bits = uart_data_bits,
+    };
+
+    usb_uart_set_line_coding(config);
+
+    httpd_resp_sendstr(req, JSON_RESULT("OK"));
+    free(buffer);
+    return ESP_OK;
+
+err_fail:
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, error_text);
+    free(buffer);
+    return ESP_FAIL;
+}
+
+static esp_err_t uart_websocket_handler(httpd_req_t* req) {
+    if(req->method == HTTP_GET) {
+        ESP_LOGI(TAG, "Handshake done, the new connection was opened");
+        return ESP_OK;
+    }
+
+    httpd_ws_frame_t ws_pkt;
+    uint8_t* buf = NULL;
+    memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+    ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+    esp_err_t ret = httpd_ws_recv_frame(req, &ws_pkt, 0);
+    if(ret != ESP_OK) {
+        ESP_LOGE(TAG, "httpd_ws_recv_frame failed to get frame len with %d", ret);
+        return ret;
+    }
+
+    if(ws_pkt.len) {
+        buf = calloc(1, ws_pkt.len + 1);
+        if(buf == NULL) {
+            ESP_LOGE(TAG, "Failed to calloc memory for buf");
+            return ESP_ERR_NO_MEM;
+        }
+        ws_pkt.payload = buf;
+        ret = httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
+        if(ret != ESP_OK) {
+            ESP_LOGE(TAG, "httpd_ws_recv_frame failed with %d", ret);
+            free(buf);
+            return ret;
+        }
+
+        usb_uart_write(ws_pkt.payload, ws_pkt.len);
+    }
+
+    if(buf) {
+        free(buf);
+    }
+
+    return ESP_OK;
+}
+
 const httpd_uri_t uri_handlers[] = {
 
     /*************** SYSTEM ***************/
@@ -648,56 +870,97 @@ const httpd_uri_t uri_handlers[] = {
     {.uri = "/api/v1/system/ping",
      .method = HTTP_GET,
      .handler = system_ping_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     {.uri = "/api/v1/system/tasks",
      .method = HTTP_GET,
      .handler = system_tasks_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     {.uri = "/api/v1/system/info",
      .method = HTTP_GET,
      .handler = system_info_get_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     {.uri = "/api/v1/system/reboot",
      .method = HTTP_POST,
      .handler = system_reboot,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     /*************** GPIO ***************/
 
     {.uri = "/api/v1/gpio/led",
      .method = HTTP_POST,
      .handler = gpio_led_set_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     /*************** WIFI ***************/
 
     {.uri = "/api/v1/wifi/list",
      .method = HTTP_GET,
      .handler = wifi_list_get_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     {.uri = "/api/v1/wifi/set_credentials",
      .method = HTTP_POST,
      .handler = wifi_set_credentials_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
 
     {.uri = "/api/v1/wifi/get_credentials",
      .method = HTTP_GET,
      .handler = wifi_get_credentials_handler,
-     .user_ctx = NULL},
+     .user_ctx = NULL,
+     .is_websocket = false},
+
+    /*************** UART ***************/
+
+    {.uri = "/api/v1/uart/get_config",
+     .method = HTTP_GET,
+     .handler = uart_get_config_handler,
+     .user_ctx = NULL,
+     .is_websocket = false},
+
+    {.uri = "/api/v1/uart/set_config",
+     .method = HTTP_POST,
+     .handler = uart_set_config_handler,
+     .user_ctx = NULL,
+     .is_websocket = false},
+
+    {.uri = "/api/v1/uart/websocket",
+     .method = HTTP_GET,
+     .handler = uart_websocket_handler,
+     .user_ctx = NULL,
+     .is_websocket = true},
 
     /*************** HTTP ***************/
 
-    {.uri = "/*", .method = HTTP_GET, .handler = http_common_get_handler, .user_ctx = NULL},
+    {.uri = "/*",
+     .method = HTTP_GET,
+     .handler = http_common_get_handler,
+     .user_ctx = NULL,
+     .is_websocket = false},
 };
 
 void network_http_server_init(void) {
-    ESP_LOGI(TAG, "init rest server");
+    ESP_LOGI(TAG, "init http server");
 
-    httpd_handle_t server = NULL;
+    {
+        websocket_stream = xStreamBufferCreateStatic(
+            WEBSOCKET_STREAM_BUFFER_SIZE_BYTES,
+            1,
+            websocket_stream_storage,
+            &websocket_stream_buffer_struct);
+
+        xTaskCreate(websocket_read_task, "websocket_read_task", 4096, NULL, 5, NULL);
+    }
+
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.max_uri_handlers = COUNT_OF(uri_handlers);
     config.uri_match_fn = httpd_uri_match_wildcard;

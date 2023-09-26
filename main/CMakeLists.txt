@@ -11,6 +11,7 @@ set(SOURCES
     "network.c"
     "network-http.c"
     "network-gdb.c"
+    "network-uart.c"
     "cli-uart.c"
     "cli/cli.c"
     "cli/cli-commands.c"
@@ -77,3 +78,4 @@ message(STATUS "FW branch num: ${FW_GIT_BRANCH_NUM}")
 message(STATUS "FW version: ${FW_GIT_VERSION}")
 
 set_property(SOURCE "cli/cli-commands-device-info.c" APPEND PROPERTY COMPILE_OPTIONS ${INFO_FLAGS})
+set_property(SOURCE "network-http.c" APPEND PROPERTY COMPILE_OPTIONS ${INFO_FLAGS})

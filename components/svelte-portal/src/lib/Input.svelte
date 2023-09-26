@@ -1,5 +1,7 @@
 <script>
   export let value = "";
+  export let type = "text";
+  export let input = undefined;
 
   export function set_value(new_value) {
     value = new_value;
@@ -12,6 +14,9 @@
   function text_input() {
     this.size = this.value.length > 3 ? this.value.length : 3;
     value = this.value;
+    if (input != undefined) {
+      input(value);
+    }
   }
 </script>
 
@@ -19,9 +24,9 @@
   autocorrect="off"
   autocapitalize="none"
   autocomplete="off"
-  type="text"
+  {type}
   {value}
-  size={value.length > 3 ? value.length : 3}
+  size={(value + "").length > 3 ? (value + "").length : 3}
   on:input={text_input}
 />
 
@@ -54,7 +59,7 @@
 
   @media (max-width: 520px) {
     input {
-      max-width: 100%;
+      width: 100%;
     }
   }
 </style>

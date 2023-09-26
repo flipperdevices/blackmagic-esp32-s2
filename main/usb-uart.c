@@ -5,16 +5,18 @@
 #include <esp_log.h>
 #include "usb.h"
 #include "usb-uart.h"
+#include "network-uart.h"
 
 #define USB_UART_PORT_NUM UART_NUM_0
 #define USB_UART_TXD_PIN (43)
 #define USB_UART_RXD_PIN (44)
-#define USB_UART_BAUD_RATE (115200)
-#define USB_UART_BUF_SIZE (128)
-#define USB_UART_TX_BUF_SIZE (64)
-#define USB_UART_RX_BUF_SIZE (64)
+#define USB_UART_BAUD_RATE (230400)
+#define USB_UART_RX_BUF_SIZE (1024)
 
-static StreamBufferHandle_t uart_rx_stream;
+#define UART_RX_STREAM_BUFFER_SIZE_BYTES 1024 * 1024
+static uint8_t uart_rx_stream_storage[UART_RX_STREAM_BUFFER_SIZE_BYTES + 1] EXT_RAM_ATTR;
+static StaticStreamBuffer_t uart_rx_stream_buffer_struct;
+static StreamBufferHandle_t uart_rx_stream = NULL;
 
 static void usb_uart_rx_isr(void* context);
 static void usb_uart_rx_task(void* pvParameters);
@@ -24,7 +26,8 @@ static const char* TAG = "usb-uart";
 void usb_uart_init() {
     ESP_LOGI(TAG, "init");
 
-    uart_rx_stream = xStreamBufferCreate(USB_UART_BUF_SIZE * 4, 1);
+    uart_rx_stream = xStreamBufferCreateStatic(
+        UART_RX_STREAM_BUFFER_SIZE_BYTES, 1, uart_rx_stream_storage, &uart_rx_stream_buffer_struct);
 
     xTaskCreate(usb_uart_rx_task, "usb_uart_rx", 4096, NULL, 5, NULL);
 
@@ -52,18 +55,14 @@ void usb_uart_set_line_state(bool dtr, bool rts) {
     // do nothing, we don't have rts and dtr pins
 }
 
-void usb_uart_set_line_coding(
-    uint32_t bit_rate,
-    uint8_t stop_bits,
-    uint8_t parity,
-    uint8_t data_bits) {
-    simple_uart_set_baud_rate(USB_UART_PORT_NUM, bit_rate);
+void usb_uart_set_line_coding(UsbUartConfig config) {
+    simple_uart_set_baud_rate(USB_UART_PORT_NUM, config.bit_rate);
 
     // cdc.h
     // 0: 1 stop bit
     // 1: 1.5 stop bits
     // 2: 2 stop bits
-    switch(stop_bits) {
+    switch(config.stop_bits) {
     case 0:
         simple_uart_set_stop_bits(USB_UART_PORT_NUM, UART_STOP_BITS_1);
         break;
@@ -83,7 +82,7 @@ void usb_uart_set_line_coding(
     // 2: Even
     // 3: Mark
     // 4: Space
-    switch(parity) {
+    switch(config.parity) {
     case 0:
         simple_uart_set_parity(USB_UART_PORT_NUM, UART_PARITY_DISABLE);
         break;
@@ -99,7 +98,7 @@ void usb_uart_set_line_coding(
 
     // cdc.h
     // 5, 6, 7, 8 or 16
-    switch(parity) {
+    switch(config.parity) {
     case 5:
         simple_uart_set_data_bits(USB_UART_PORT_NUM, UART_DATA_5_BITS);
         break;
@@ -117,9 +116,67 @@ void usb_uart_set_line_coding(
     }
 }
 
+UsbUartConfig usb_uart_get_line_coding() {
+    UsbUartConfig config = {
+        .bit_rate = simple_uart_get_baud_rate(USB_UART_PORT_NUM),
+        .stop_bits = 0,
+        .parity = 0,
+        .data_bits = 0,
+    };
+
+    switch(simple_uart_get_stop_bits(USB_UART_PORT_NUM)) {
+    case UART_STOP_BITS_1:
+        config.stop_bits = 0;
+        break;
+    case UART_STOP_BITS_1_5:
+        config.stop_bits = 1;
+        break;
+    case UART_STOP_BITS_2:
+        config.stop_bits = 2;
+        break;
+    default:
+        break;
+    }
+
+    switch(simple_uart_get_parity(USB_UART_PORT_NUM)) {
+    case UART_PARITY_DISABLE:
+        config.parity = 0;
+        break;
+    case UART_PARITY_ODD:
+        config.parity = 1;
+        break;
+    case UART_PARITY_EVEN:
+        config.parity = 2;
+        break;
+    default:
+        break;
+    }
+
+    switch(simple_uart_get_data_bits(USB_UART_PORT_NUM)) {
+    case UART_DATA_5_BITS:
+        config.data_bits = 5;
+        break;
+    case UART_DATA_6_BITS:
+        config.data_bits = 6;
+        break;
+    case UART_DATA_7_BITS:
+        config.data_bits = 7;
+        break;
+    case UART_DATA_8_BITS:
+        config.data_bits = 8;
+        break;
+    default:
+        break;
+    }
+
+    return config;
+}
+
+#include "network-http.h"
 static void usb_uart_rx_task(void* pvParameters) {
+    uint8_t* data = malloc(USB_UART_RX_BUF_SIZE);
+
     while(1) {
-        uint8_t data[USB_UART_RX_BUF_SIZE];
         size_t length =
             xStreamBufferReceive(uart_rx_stream, data, USB_UART_RX_BUF_SIZE, portMAX_DELAY);
 
@@ -130,6 +187,10 @@ static void usb_uart_rx_task(void* pvParameters) {
                 } else {
                     usb_uart_tx_char(data[i], false);
                 }
+            }
+            network_http_uart_write_data(data, length);
+            if(network_uart_connected()) {
+                network_uart_send(data, length);
             }
         }
     }

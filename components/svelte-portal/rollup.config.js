@@ -39,8 +39,9 @@ export default {
 	},
 	plugins: [
 		replace({
-            development_mode: !production,
-        }),
+			development_mode: !production,
+			preventAssignment: true,
+		}),
 		svelte({
 			compilerOptions: {
 				// enable run-time checks when not in production
@@ -58,7 +59,8 @@ export default {
 		// https://github.com/rollup/plugins/tree/master/packages/commonjs
 		resolve({
 			browser: true,
-			dedupe: ['svelte']
+			dedupe: ['svelte', 'stringview'],
+			extensions: ['.svelte', '.js', '.mjs']
 		}),
 		commonjs(),
 

@@ -17,6 +17,13 @@ typedef struct {
     uart_isr rx_isr;
 } uart_context_t;
 
+typedef struct {
+    uint32_t baud_rate;
+    uart_stop_bits_t stop_bits;
+    uart_parity_t parity;
+    uart_word_length_t data_bits;
+} UartInnerConfig;
+
 #define UART_CONTEX_INIT_DEF(uart_num)                                                    \
     {                                                                                     \
         .hal.dev = UART_LL_GET_HW(uart_num), .uart_index = uart_num, .isr_context = NULL, \
@@ -29,6 +36,11 @@ static uart_context_t uart_context[UART_NUM_MAX] = {
 #if UART_NUM_MAX > 2
     UART_CONTEX_INIT_DEF(UART_NUM_2),
 #endif
+};
+
+static UartInnerConfig uart_config[UART_NUM_MAX] = {
+    {0},
+    {0},
 };
 
 #define UART_HAL(uart_num) &(uart_context[uart_num].hal)
@@ -173,17 +185,37 @@ static void simple_uart_isr(void* arg) {
 }
 
 void simple_uart_set_baud_rate(uint8_t uart_num, uint32_t baud_rate) {
+    uart_config[uart_num].baud_rate = baud_rate;
     uart_hal_set_baudrate(UART_HAL(uart_num), baud_rate);
 }
 
 void simple_uart_set_stop_bits(uint8_t uart_num, uart_stop_bits_t stop_bits) {
+    uart_config[uart_num].stop_bits = stop_bits;
     uart_hal_set_stop_bits(UART_HAL(uart_num), stop_bits);
 }
 
 void simple_uart_set_parity(uint8_t uart_num, uart_parity_t parity) {
+    uart_config[uart_num].parity = parity;
     uart_hal_set_parity(UART_HAL(uart_num), parity);
 }
 
 void simple_uart_set_data_bits(uint8_t uart_num, uart_word_length_t data_bits) {
+    uart_config[uart_num].data_bits = data_bits;
     uart_hal_set_data_bit_num(UART_HAL(uart_num), data_bits);
+}
+
+uint32_t simple_uart_get_baud_rate(uint8_t uart_num) {
+    return uart_config[uart_num].baud_rate;
+}
+
+uart_stop_bits_t simple_uart_get_stop_bits(uint8_t uart_num) {
+    return uart_config[uart_num].stop_bits;
+}
+
+uart_parity_t simple_uart_get_parity(uint8_t uart_num) {
+    return uart_config[uart_num].parity;
+}
+
+uart_word_length_t simple_uart_get_data_bits(uint8_t uart_num) {
+    return uart_config[uart_num].data_bits;
 }

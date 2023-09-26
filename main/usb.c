@@ -75,12 +75,14 @@ static void usb_line_state_cb(bool dtr, bool rts, void* context) {
 }
 
 static void usb_set_line_coding_callback(cdc_line_coding_t const* p_line_coding, void* context) {
-    uint32_t bit_rate = p_line_coding->bit_rate;
-    uint8_t stop_bits = p_line_coding->stop_bits;
-    uint8_t parity = p_line_coding->parity;
-    uint8_t data_bits = p_line_coding->data_bits;
+    UsbUartConfig config = {
+        .bit_rate = p_line_coding->bit_rate,
+        .stop_bits = p_line_coding->stop_bits,
+        .parity = p_line_coding->parity,
+        .data_bits = p_line_coding->data_bits,
+    };
 
-    usb_uart_set_line_coding(bit_rate, stop_bits, parity, data_bits);
+    usb_uart_set_line_coding(config);
 }
 
 //--------------------------------------------------------------------+

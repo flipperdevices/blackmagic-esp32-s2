@@ -7,7 +7,7 @@
 extern void esp_log_impl_lock(void);
 extern void esp_log_impl_unlock(void);
 
-#define LOG_BUFFER_SIZE (128)
+#define LOG_BUFFER_SIZE (256)
 static SoftUart* log_uart = NULL;
 static char log_buffer[LOG_BUFFER_SIZE];
 

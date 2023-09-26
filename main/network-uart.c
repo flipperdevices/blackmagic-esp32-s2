@@ -18,56 +18,50 @@
 #include "led.h"
 #include "usb.h"
 #include "delay.h"
-#include "network-gdb.h"
-#include <gdb-glue.h>
+#include "network-uart.h"
+#include "usb-uart.h"
 
-#define PORT 2345
+#define PORT 3456
 #define KEEPALIVE_IDLE 5
 #define KEEPALIVE_INTERVAL 5
 #define KEEPALIVE_COUNT 3
-#define TAG "network-gdb"
+#define TAG "network-uart"
 
 typedef struct {
     bool connected;
     int socket_id;
-} NetworkGDB;
+} NetworkUART;
 
-static NetworkGDB network_gdb;
+static NetworkUART network_uart;
 
-bool network_gdb_connected(void) {
-    return network_gdb.connected;
+bool network_uart_connected(void) {
+    return network_uart.connected;
 }
 
-void network_gdb_send(uint8_t* buffer, size_t size) {
+void network_uart_send(uint8_t* buffer, size_t size) {
     int to_write = size;
     while(to_write > 0) {
-        int written = send(network_gdb.socket_id, buffer + (size - to_write), to_write, 0);
+        int written = send(network_uart.socket_id, buffer + (size - to_write), to_write, 0);
         to_write -= written;
     }
 };
 
-static void receive_and_send_to_gdb(void) {
+static void receive_and_send_to_uart(void) {
     size_t rx_size = SIZE_MAX;
-    size_t gdb_packet_size = gdb_glue_get_packet_size();
-    uint8_t* buffer_rx = malloc(gdb_packet_size);
+    const size_t data_size = 1024;
+    uint8_t* buffer_rx = malloc(data_size);
 
     do {
-        if(gdb_glue_can_receive()) {
-            size_t max_len = gdb_glue_get_free_size();
-            if(max_len > gdb_packet_size) max_len = gdb_packet_size;
-            rx_size = recv(network_gdb.socket_id, buffer_rx, max_len, 0);
-            if(rx_size > 0) {
-                gdb_glue_receive(buffer_rx, rx_size);
-            }
-        } else {
-            delay(10);
+        rx_size = recv(network_uart.socket_id, buffer_rx, data_size, 0);
+        if(rx_size > 0) {
+            usb_uart_write(buffer_rx, rx_size);
         }
     } while(rx_size > 0);
 
     free(buffer_rx);
 }
 
-static void network_gdb_server_task(void* pvParameters) {
+static void network_uart_server_task(void* pvParameters) {
     char addr_str[128];
     int addr_family = (int)pvParameters;
     int ip_protocol = 0;
@@ -75,7 +69,7 @@ static void network_gdb_server_task(void* pvParameters) {
     int keepIdle = KEEPALIVE_IDLE;
     int keepInterval = KEEPALIVE_INTERVAL;
     int keepCount = KEEPALIVE_COUNT;
-    network_gdb.connected = false;
+    network_uart.connected = false;
     struct sockaddr_storage dest_addr;
 
     if(addr_family == AF_INET) {
@@ -124,7 +118,7 @@ static void network_gdb_server_task(void* pvParameters) {
 
         // Set tcp keepalive option
         setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &keepAlive, sizeof(int));
-        setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &keepIdle, sizeof(int));
+        // setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &keepIdle, sizeof(int));
         setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &keepIdle, sizeof(int));
         setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &keepInterval, sizeof(int));
         setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &keepCount, sizeof(int));
@@ -137,28 +131,13 @@ static void network_gdb_server_task(void* pvParameters) {
 
         ESP_LOGI(TAG, "Socket accepted ip address: %s", addr_str);
 
-        // continue only if DAP-Link is not connected
-        if(!dap_is_connected()) {
-            led_set_blue(255);
-            delay(10);
-            led_set_blue(0);
+        network_uart.socket_id = sock;
+        network_uart.connected = true;
 
-            ESP_LOGI(TAG, "DAP-Link is connected, not accepting connection");
+        receive_and_send_to_uart();
 
-            network_gdb.socket_id = sock;
-            network_gdb.connected = true;
-
-            receive_and_send_to_gdb();
-
-            network_gdb.connected = false;
-            network_gdb.socket_id = -1;
-
-            led_set_blue(255);
-            delay(10);
-            led_set_blue(0);
-        } else {
-            ESP_LOGE(TAG, "DAP-Link is connected, not accepting connection");
-        }
+        network_uart.connected = false;
+        network_uart.socket_id = -1;
 
         shutdown(sock, 0);
         close(sock);
@@ -169,10 +148,10 @@ CLEAN_UP:
     vTaskDelete(NULL);
 }
 
-void network_gdb_server_init(void) {
-    network_gdb.connected = false;
-    network_gdb.socket_id = -1;
+void network_uart_server_init(void) {
+    network_uart.connected = false;
+    network_uart.socket_id = -1;
 
     esp_wifi_set_ps(WIFI_PS_NONE);
-    xTaskCreate(network_gdb_server_task, "network_gdb_server", 4096, (void*)AF_INET, 5, NULL);
+    xTaskCreate(network_uart_server_task, "network_uart_server", 4096, (void*)AF_INET, 5, NULL);
 }

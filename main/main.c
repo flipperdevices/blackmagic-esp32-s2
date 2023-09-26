@@ -12,8 +12,8 @@
 #include "i2c.h"
 #include "network.h"
 #include "network-http.h"
-#include "network-uart.h"
 #include "network-gdb.h"
+#include "network-uart.h"
 #include "factory-reset-service.h"
 
 #include <gdb-glue.h>
@@ -64,8 +64,8 @@ void app_main(void) {
     nvs_init();
     network_init();
     network_http_server_init();
-    // network_uart_server_init();
     network_gdb_server_init();
+    network_uart_server_init();
 
     usb_init();
     cli_uart_init();

@@ -12,3 +12,5 @@
  * Start HTTP server
  */
 void network_http_server_init(void);
+
+void network_http_uart_write_data(uint8_t* data, size_t size);

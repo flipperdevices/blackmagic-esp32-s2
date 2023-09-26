@@ -1,78 +1,16 @@
 <script>
-  import Button from "./Button.svelte";
-  import Popup from "./Popup.svelte";
-  import Input from "./Input.svelte";
-  import Spinner from "./Spinner.svelte";
-  import SpinnerBig from "./SpinnerBig.svelte";
-  import Select from "./Select.svelte";
-  import ButtonInline from "./ButtonInline.svelte";
-
-  let server = "";
-  if (development_mode) {
-    server = "http://172.30.1.223";
-  }
-
-  async function api_post(api, data) {
-    const res = await fetch(api, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-
-    const json = await res.json();
-    return json;
-  }
-
-  async function api_get(api) {
-    const res = await fetch(api, {
-      method: "GET",
-    });
-
-    const json = await res.json();
-    return json;
-  }
-
-  let popup_select_net;
-  let popup_message;
-  let popup_message_text;
-
-  let mode_select;
-  let usb_mode_select;
-  let ap_ssid_input;
-  let ap_pass_input;
-  let sta_ssid_input;
-  let sta_pass_input;
-  let hostname_input;
+  import WebSocket from "./lib/WebSocket.svelte";
+  import UartTerminal from "./lib/UartTerminal.svelte";
+  import TabWiFi from "./tabs/TabWiFi.svelte";
+  import TabSys from "./tabs/TabSys.svelte";
+  import TabPs from "./tabs/TabPS.svelte";
+  import Reload from "./lib/Reload.svelte";
+  import Indicator from "./lib/Indicator.svelte";
+  import { onMount } from "svelte";
 
   let current_tab = "WiFi";
   if (localStorage.getItem("current_tab") != null) {
     current_tab = localStorage.getItem("current_tab");
-  }
-
-  async function save_settings() {
-    popup_message_text = "";
-    popup_message.show();
-
-    await api_post(server + "/api/v1/wifi/set_credentials", {
-      wifi_mode: mode_select.get_value(),
-      usb_mode: usb_mode_select.get_value(),
-      ap_ssid: ap_ssid_input.get_value(),
-      ap_pass: ap_pass_input.get_value(),
-      sta_ssid: sta_ssid_input.get_value(),
-      sta_pass: sta_pass_input.get_value(),
-      hostname: hostname_input.get_value(),
-    }).then((json) => {
-      if (json.error) {
-        popup_message_text = json.error;
-      } else {
-        popup_message_text = "Saved!";
-      }
-    });
-  }
-
-  async function reboot_board() {
-    api_post(server + "/api/v1/system/reboot", {});
-    popup_message_text = "Rebooted";
-    popup_message.show();
   }
 
   function change_tab(tab) {
@@ -80,252 +18,99 @@
     localStorage.setItem("current_tab", current_tab);
   }
 
-  function print_mac(mac_array) {
-    let str = "";
-    for (let index = 0; index < mac_array.length; index++) {
-      str += mac_array[index].toString(16).padStart(2, "0");
-      if (index < mac_array.length - 1) {
-        str += ":";
-      }
-    }
-    return str;
+  let uart_history_array = [];
+  function uart_history_array_get() {
+    return uart_history_array;
   }
 
-  function print_ip(ip_addr) {
-    var byteArray = [0, 0, 0, 0];
-
-    for (var index = 0; index < byteArray.length; index++) {
-      var byte = ip_addr & 0xff;
-      byteArray[index] = byte;
-      ip_addr = ip_addr >> 8;
-    }
-
-    return byteArray.join(".");
+  function uart_history_array_put(data) {
+    uart_history_array.push(data);
   }
+
+  let uart_indicatior = undefined;
+  let uart_terminal = undefined;
+  let web_socket = undefined;
+
+  function receive_uart(data) {
+    uart_indicatior.activate();
+    uart_history_array_put(data);
+    if (uart_terminal != undefined) {
+      uart_terminal.push(data);
+    }
+  }
+
+  function uart_on_mount() {
+    let uart_data = uart_history_array_get();
+    for (let i = 0; i < uart_data.length; i++) {
+      uart_terminal.push(uart_data[i]);
+    }
+  }
+
+  function uart_send(data) {
+    web_socket.send(data);
+  }
+
+  const tabs = ["WiFi", "SYS", "PS", "UART"];
+
+  // ugly hack for terminal height on mobile devices
+  const appHeight = () => {
+    const doc = document.documentElement;
+    doc.style.setProperty("--app-height", `${window.innerHeight}px`);
+  };
+
+  onMount(() => {
+    appHeight();
+    window.addEventListener("resize", appHeight);
+    window.addEventListener("orientationchange", function () {
+      appHeight();
+    });
+  });
 </script>
 
 <main>
   <tabs>
-    <tab
-      class:selected={current_tab == "WiFi"}
-      on:click={() => {
-        change_tab("WiFi");
-      }}
-    >
-      WiFi
-    </tab>
-
-    <tab
-      class:selected={current_tab == "SYS"}
-      on:click={() => {
-        change_tab("SYS");
-      }}
-    >
-      SYS
-    </tab>
-
-    <tab
-      class:selected={current_tab == "PS"}
-      on:click={() => {
-        change_tab("PS");
-      }}
-    >
-      PS
-    </tab>
+    {#each tabs as tab}
+      <tab
+        class:selected={current_tab == tab}
+        on:click={() => {
+          change_tab(tab);
+        }}
+        on:keypress={() => {
+          change_tab(tab);
+        }}
+      >
+        {tab}
+      </tab>
+    {/each}
   </tabs>
 
-  <tabs-content>
-    {#if current_tab == "WiFi"}
+  <tabs-content class:uart-terminal={current_tab == tabs[3]}>
+    {#if current_tab == tabs[0]}
       <tab-content>
-        <div class="grid">
-          {#await api_get(server + "/api/v1/wifi/get_credentials")}
-            <div class="value-name">Mode:</div>
-            <div class="value"><Spinner /></div>
-
-            <div class="value-name splitter">STA</div>
-            <div class="value mobile-hidden">(join another network)</div>
-
-            <div class="value-name">SSID:</div>
-            <div class="value"><Spinner /></div>
-
-            <div class="value-name">Pass:</div>
-            <div class="value"><Spinner /></div>
-
-            <div class="value-name splitter">AP</div>
-            <div class="value mobile-hidden">(own access point)</div>
-
-            <div class="value-name">SSID:</div>
-            <div class="value"><Spinner /></div>
-
-            <div class="value-name">Pass:</div>
-            <div>class="value"<Spinner /></div>
-
-            <div class="value-name">Hostname:</div>
-            <div class="value"><Spinner /></div>
-
-            <div class="value-name">USB mode:</div>
-            <div class="value"><Spinner /></div>
-          {:then json}
-            <div class="value-name">Mode:</div>
-            <div class="value">
-              <Select
-                bind:this={mode_select}
-                items={[
-                  { text: "STA (join another network)", value: "STA" },
-                  { text: "AP (own access point)", value: "AP" },
-                  { text: "Disabled (do not use WiFi)", value: "Disabled" },
-                ]}
-                value={json.wifi_mode}
-              />
-            </div>
-
-            <div class="value-name splitter">STA</div>
-            <div class="value mobile-hidden">(join another network)</div>
-
-            <div class="value-name">SSID:</div>
-            <div class="value">
-              <Input
-                value={json.sta_ssid}
-                bind:this={sta_ssid_input}
-              /><ButtonInline value="+" on:click={popup_select_net.show} />
-            </div>
-
-            <div class="value-name">Pass:</div>
-            <div class="value">
-              <Input value={json.sta_pass} bind:this={sta_pass_input} />
-            </div>
-
-            <div class="value-name splitter">AP</div>
-            <div class="value mobile-hidden">(own access point)</div>
-
-            <div class="value-name">SSID:</div>
-            <div class="value">
-              <Input value={json.ap_ssid} bind:this={ap_ssid_input} />
-            </div>
-
-            <div class="value-name">Pass:</div>
-            <div class="value">
-              <Input value={json.ap_pass} bind:this={ap_pass_input} />
-            </div>
-
-            <div class="value-name">Hostname:</div>
-            <div class="value">
-              <Input value={json.hostname} bind:this={hostname_input} />
-            </div>
-
-            <div class="value-name">USB mode:</div>
-            <div class="value">
-              <Select
-                bind:this={usb_mode_select}
-                items={[
-                  { text: "BlackMagicProbe", value: "BM" },
-                  { text: "DapLink", value: "DAP" },
-                ]}
-                value={json.usb_mode}
-              />
-            </div>
-          {:catch error}
-            <error>{error.message}</error>
-          {/await}
-        </div>
-        <div style="margin-top: 10px;">
-          <Button value="SAVE" on:click={save_settings} />
-          <Button value="REBOOT" on:click={reboot_board} />
-        </div>
+        <TabWiFi />
       </tab-content>
-    {/if}
-
-    {#if current_tab == "SYS"}
+    {:else if current_tab == tabs[1]}
       <tab-content>
-        <div class="grid">
-          {#await api_get(server + "/api/v1/system/info")}
-            <div class="value-name">IP:</div>
-            <div class="value"><Spinner /></div>
-          {:then json}
-            <div class="value-name">IP:</div>
-            <div class="value">{print_ip(json.ip)}</div>
-            <div class="value-name">Mac:</div>
-            <div class="value">{print_mac(json.mac)}</div>
-            <div class="value-name">IDF ver:</div>
-            <div class="value">{json.idf_version}</div>
-            <div class="value-name">Model:</div>
-            <div class="value">
-              {json.model}.{json.revision}
-              {json.cores}-core
-            </div>
-            <div class="value-name">Min free:</div>
-            <div class="value">{json.heap.minimum_free_bytes}</div>
-            <div class="value-name">Free:</div>
-            <div class="value">{json.heap.total_free_bytes}</div>
-            <div class="value-name">Alloc:</div>
-            <div class="value">{json.heap.total_allocated_bytes}</div>
-            <div class="value-name">Max block:</div>
-            <div class="value">{json.heap.largest_free_block}</div>
-          {:catch error}
-            <error>{error.message}</error>
-          {/await}
-        </div>
+        <TabSys />
       </tab-content>
-    {/if}
-
-    {#if current_tab == "PS"}
+    {:else if current_tab == tabs[2]}
       <tab-content>
-        {#await api_get(server + "/api/v1/system/tasks")}
-          <span>Name</span>
-          <span><Spinner /></span>
-        {:then json}
-          <task-list>
-            <span class="mobile-hidden">Name</span>
-            <span class="mobile-hidden">State</span>
-            <span class="mobile-hidden">Handle</span>
-            <span class="mobile-hidden">Stack base</span>
-            <span class="mobile-hidden">WMRK</span>
-            {#each json.list.sort(function (a, b) {
-              return a.number - b.number;
-            }) as task}
-              <span>{task.name}</span>
-              <span>{task.state}</span>
-              <span>0x{task.handle.toString(16).toUpperCase()}</span>
-              <span>0x{task.stack_base.toString(16).toUpperCase()}</span>
-              <span>{task.watermark}</span>
-            {/each}
-          </task-list>
-        {:catch error}
-          <error>{error.message}</error>
-        {/await}
+        <TabPs />
+      </tab-content>
+    {:else if current_tab == tabs[3]}
+      <tab-content class="uart-terminal">
+        <UartTerminal
+          bind:this={uart_terminal}
+          on_mount={uart_on_mount}
+          send={uart_send}
+        />
       </tab-content>
     {/if}
   </tabs-content>
 
-  <Popup bind:this={popup_select_net}>
-    {#await api_get(server + "/api/v1/wifi/list", {})}
-      <div>Nets: <SpinnerBig /></div>
-    {:then json}
-      <div>Nets:</div>
-      {#each json.net_list as net}
-        <div>
-          <ButtonInline
-            style="normal"
-            value="[{net.ssid} {net.channel}ch {net.rssi}dBm {net.auth}]"
-            on:click={() => {
-              popup_select_net.close();
-              sta_ssid_input.set_value(net.ssid);
-            }}
-          />
-        </div>
-      {/each}
-    {:catch error}
-      <error>{error.message}</error>
-    {/await}
-  </Popup>
-
-  <Popup bind:this={popup_message}>
-    {#if popup_message_text != ""}
-      {popup_message_text}
-    {:else}
-      <Spinner />
-    {/if}
-  </Popup>
+  <Indicator bind:this={uart_indicatior} />
+  <WebSocket bind:this={web_socket} receive={receive_uart} />
+  <Reload />
 </main>
 
 <style>
@@ -346,36 +131,16 @@
     user-select: none;
   }
 
-  tabs {
-    border-bottom: 4px dashed #000;
-    width: 100%;
-    display: block;
+  :global(.selectable) {
+    -moz-user-select: text;
+    -o-user-select: text;
+    -khtml-user-select: text;
+    -webkit-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
   }
 
-  tab {
-    margin-right: 10px;
-    padding: 5px 10px;
-    margin-bottom: 5px;
-    display: inline-block;
-  }
-
-  tab:hover,
-  tab.selected:hover {
-    background: rgb(255, 255, 255);
-    color: #000000;
-  }
-
-  tab.selected {
-    background-color: black;
-    color: white;
-  }
-
-  tabs-content {
-    display: block;
-    margin-top: 10px;
-  }
-
-  error {
+  :global(error) {
     padding: 5px 10px;
     background-color: rgb(255, 0, 0);
     color: black;
@@ -406,77 +171,61 @@
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   }
 
-  .grid {
-    display: inline-grid;
-    grid-template-columns: auto auto;
-  }
-
-  .grid > div {
-    margin-top: 10px;
-  }
-
-  .value-name {
-    text-align: right;
-  }
-
-  task-list {
-    display: inline-grid;
-    grid-template-columns: auto auto auto auto auto;
-    width: 100%;
-  }
-
-  @media (max-width: 768px) {
-    task-list {
-      grid-template-columns: auto auto auto auto;
-    }
-
-    task-list > span:nth-child(5n + 3) {
-      display: none;
-    }
-  }
-
-  @media (max-width: 600px) {
-    task-list {
-      grid-template-columns: auto auto auto;
-    }
-
-    task-list > span:nth-child(5n + 4) {
-      display: none;
-    }
+  tabs-content.uart-terminal {
+    height: calc(var(--app-height) - 105px);
   }
 
   @media (max-width: 520px) {
-    .grid {
-      grid-template-columns: auto;
-      width: 100%;
+    :global(.mobile-hidden) {
+      display: none !important;
+    }
+    main {
+      margin: 0;
     }
 
-    .mobile-hidden {
-      display: none;
+    tabs-content.uart-terminal {
+      height: calc(var(--app-height) - 85px);
     }
+  }
 
-    .value-name {
-      text-align: left;
-    }
+  tabs {
+    border-bottom: 4px dashed #000;
+    width: 100%;
+    display: block;
+  }
 
-    .splitter {
-      background-color: #000;
-      width: 100%;
-      color: #ffa21d;
-      text-align: center;
-    }
+  tab {
+    margin-right: 10px;
+    padding: 5px 10px;
+    margin-bottom: 5px;
+    display: inline-block;
+  }
 
-    task-list {
-      grid-template-columns: auto;
-      text-align: center;
-    }
+  tab:last-child {
+    margin-right: 0;
+  }
 
-    task-list > span:nth-child(5n + 1) {
-      padding-top: 10px;
-    }
+  tab:hover,
+  tab.selected:hover {
+    background: rgb(255, 255, 255);
+    color: #000000;
+  }
 
-    task-list > span:nth-child(5n + 5) {
-      border-bottom: 4px dashed #000;
-    }
+  tab.selected {
+    background-color: black;
+    color: white;
+  }
+
+  tabs-content {
+    display: block;
+    margin-top: 10px;
+  }
+
+  tab-content {
+    display: block;
+  }
+
+  tab-content.uart-terminal {
+    height: 100%;
   }
 </style>

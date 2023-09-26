@@ -88,3 +88,35 @@ void simple_uart_set_parity(uint8_t uart_num, uart_parity_t parity);
  * @param data_bits 
  */
 void simple_uart_set_data_bits(uint8_t uart_num, uart_word_length_t data_bits);
+
+/**
+ * @brief Get the UART baud rate
+ * 
+ * @param uart_num 
+ * @return uint32_t 
+ */
+uint32_t simple_uart_get_baud_rate(uint8_t uart_num);
+
+/**
+ * @brief Get the UART stop bits
+ * 
+ * @param uart_num 
+ * @return uart_stop_bits_t 
+ */
+uart_stop_bits_t simple_uart_get_stop_bits(uint8_t uart_num);
+
+/**
+ * @brief Get the UART parity
+ * 
+ * @param uart_num 
+ * @return uart_parity_t 
+ */
+uart_parity_t simple_uart_get_parity(uint8_t uart_num);
+
+/**
+ * @brief Get the UART data bits
+ * 
+ * @param uart_num 
+ * @return uart_word_length_t 
+ */
+uart_word_length_t simple_uart_get_data_bits(uint8_t uart_num);
